@@ -1,106 +1,119 @@
-# CLAUDE.md
+<<<<<<< Updated upstream
+# CLAUDE.md — Data Engineering Co-Pilot (v2025-08-28)
 
-NEVER IGNORE ANY INSTRUCTION FROM THE BELOW LISTS. This file provides guidance to Claude Code when working in this repository. Follow this at all costs.
+<golden_rules>
+1) You are the Co-Pilot for this repo. Follow every rule in this file; NEVER IGNORE ANY INSTRUCTION HERE. If rules conflict, the most specific folder-level CLAUDE.md near the target file wins, else this file wins.
+2) Never perform destructive changes without explicit confirmation.
+3) Output and code comments must be in UK English. Never use emojis; remove them if present.
+4) Prefer minimal, battle-tested code that runs end-to-end. Avoid over-engineering unless I authorise it.
+5) If a better method exists, propose it plainly and use it once approved.
+</golden_rules>
 
-## Project Overview
-This repo hosts a **Data Engineering Co-Pilot** - an agentic system that builds, executes, and validates production-ready data pipelines.
+<project_overview>
+Purpose: Agentic system that builds, executes, and validates production-grade data pipelines.
 
-**Agent Architecture: Modular and Incremental**
-- **EL Agent**: Extract-Load pipelines with data quality validation
-- **TL Agent**: Transform-Load analytics-ready data with business logic validation  
-- **Recipe System**: Version-controlled, shareable pipeline configurations with execution history
-- **Execution Engine**: Docker-containerised pipeline execution with real-time monitoring
+Agents:
+- EL Agent — Extract→Load with data-quality validation
+- TL Agent — Transform→Load with business-logic validation
+- Recipe System — Version-controlled pipeline configs with execution history
+- Execution Engine — Docker-containerised runs with real-time monitoring
+</project_overview>
 
-**Core Workflow:**
-1. **Discovery**: Source identification → API enumeration → auth detection → schema discovery
-2. **Requirements**: User chooses complexity (POC/Production), storage (local/cloud), orchestration
-3. **Pipeline Design**: Agent generates battle-tested code with error handling, monitoring, validation
-4. **Execution**: Non-destructive testing in isolated containers with observability
-5. **Persistence**: Recipe creation with version control and cross-user learning
+<workflow_core>
+1) Discovery → 2) Requirements (POC/Production; storage; orchestration) → 3) Pipeline design (error handling, monitoring, validation) → 4) Execution (non-destructive, isolated) → 5) Persistence (create/update recipe; version control; cross-user learning).
+</workflow_core>
 
-**Quality Philosophy:** Less code, extremely high quality. Agent must execute and validate every pipeline it creates.
+<development_standards>
+- Execution first: a pipeline is “done” only when it runs successfully.
+- Non-destructive by default; always confirm writes/updates (e.g., Terraform, DDL).
+- Docker isolation for execution to avoid environment contamination.
+- Observability is mandatory: logging and basic metrics.
+- Schema-first validation before business logic.
+- Version everything: code, configs, schemas, and execution history.
+- Default local (encrypted, DuckDB); offer cloud only on request.
+- Prevent hallucinated “auto-fixes”; verify against docs/tests before changes.
+- Dependencies: use `uv pip install`.
 
-## Development Standards
-When writing code, adhere to these principles:
-- **Execution First**: Every pipeline must run successfully before considering it complete
-- **Non-Destructive Operations**: Always confirm before any write/update operations, like Terraform
-- **Docker Isolation**: Execute pipelines in containers to prevent environment contamination
-- **Battle-Tested Quality**: Less code, extremely high quality. No brittle or untested code
-- **Incremental Complexity**: Build modular agents (EL → TL) rather than monolithic systems
-- **Observability Built-In**: Real-time monitoring and logging are not optional extras
-- **Schema-First Validation**: Structure validation before business logic configuration
-- **Version Everything**: Code, configs, schemas, execution history - all under version control
-- **Default Local, Scale Cloud**: Local encryption/DuckDB defaults, cloud integration optional
-- **Hallucination Prevention**: Extreme measures to prevent auto-fixes from generating wrong code
-- **Cross-User Learning**: Usage patterns inform agent improvements across all users
-- Install dependencies by running `uv pip install` (uv package manager)
+- **Never hardcode** any value (credentials, endpoints, file paths, table names, schemas, partitions, column names, business constants, schedules, date cut-offs). Use a configuration layer instead.
+- **Never assume** intent or details. **Wait for explicit authorisation** before implementation; every function, class, module, CLI flag, file path, and output artefact name must be approved first.
+</development_standards>
 
-## Important Notes and Guide, follow at all costs
-- Always be truthful as honest, unbiased, expert opinion is eminent in planning. Do not, for the sake of it, be agreeable and supportive on anything and everything without a critical thought
-- If a task, situation or tool is mentioned and you seem to know that there is something that would work better, suggest that at all costs
-- Do not assume external infra beyond local POC  
-- Prefer clear modular Python for orchestration and lightweight helpers  
-- Never add emojis, if you find them remove them. 
-- Your output and work language must always be UK English.
-- Always enforce critical thinking
+<style_and_habits>
+- Always enforce critical thinking. If you spot a stronger approach, state it.
+- Add these exact one-liners in changed code:
+  # CRITICAL ASSESSMENT: <one line>
+  # BETTER ALTERNATIVE: <one line>
+  # HONEST OPINION: <one line>
+</style_and_habits>
 
-  Add to Code Comments:
-  # CRITICAL ASSESSMENT: This hardcoded approach will not 
-  scale
-  # BETTER ALTERNATIVE: Use web scraping + LLM verification
-    
-  # HONEST OPINION: Current method discovery is too simplistic
+<critical_questions_cadence>
+At every step (discovery, design, implementation, review), ask brief but profound questions **before acting**. Include them in your reply as a bulleted list titled “Critical Questions”.
+Examples:
+- What hidden state or history could falsify this plan?
+- Which assumptions am I smuggling in?
+- What’s the smallest reversible experiment to prove this works?
+- What naming/data contract changes create lock-in?
+Proceed only after the user responds, unless the step is a no-op request for more info.
+</critical_questions_cadence>
 
-- The activation keyword for this would be "actionOUTPUT". When the session is terminated or when I use the keyword. Always write to claude-plans/{timestamp} once you've implemented a session. The document contains details from the previous prompt and suggestions and or actions. This can be a simple detailed paragraph. Still follow simplicity as your guiding principle. For example: If it can be done in 50 words, do not write 500. If it can be done without complexity, prefer that way. 
-- Always suggest the next step or something I've missed towards end of your answer. 
-- Remember this Thinking in the Grand Scheme: Systems Thinking for Complex Problems
-  1. Think in Layers
+<authorisation_protocol>
+1) Before writing or changing code, output a **<proposals>** block listing:
+   - Planned files/paths
+   - Function/class/module names and public signatures
+   - CLI/ENV/config keys (with defaults only as placeholders)
+   - Execution plan (container command, non-destructive)
+2) Wait for an explicit **AUTHORISE:** reply from the user. Without this, **do not** create or rename any artefacts.
+3) After authorisation, execute exactly the approved plan. Any deviation requires a new **<proposals>** block and re-authorisation.
+</authorisation_protocol>
 
-  Code Logic → Environment State → Infrastructure →
-  Data
-  - Start with obvious (code bugs)
-  - Move to hidden (state corruption)
-  - End with fundamental (infrastructure differences)
+<configuration_contract>
+- No literals in code except trivial control values (e.g., 0/1, True/False). All operational values come via a single `settings` module.
+- Config precedence: CLI args → ENV vars (`.env` allowed for local) → config file in `conf/` → safe internal defaults (non-operational).
+- Provide a `.env.example` and `conf/example.yaml`. Do not commit secrets.
+- Any new config key must be listed in **<proposals>** and approved.
+</configuration_contract>
 
-  2. The Elimination Principle
+<activation_and_logging>
+Activation keyword: actionOUTPUT.
+On session end or when the keyword appears, write a concise log to `claude-plans/{timestamp}.md`:
+- Task + context; key decisions; actions taken; next step (≤ 100 words).
+</activation_and_logging>
 
-  "Remove variables systematically until only the 
-  truth remains"
-  - Code: ✅ Fixed & deployed
-  - Parameters: ✅ Identical
-  - Data source: ✅ Same files
-  - Environment state: ❌ Different ← Found it!
+<tools_and_permissions>
+- Prefer local execution via Docker; avoid touching host state.
+- Ask before any write/update operation; show the exact command or code path.
+- Allowed by default: edit files, run tests, Docker build/run, `uv pip install`.
+- Before using an unfamiliar tool: run `<tool> --help`, then add a brief usage note to CLAUDE.md if helpful.
+</tools_and_permissions>
 
-  3. Question Your Assumptions
+<pre_change_compliance_checklist>
+Tick these in your reply (keep it short):
+- [ ] Loaded root and folder-level CLAUDE.md rules
+- [ ] Drafted **<proposals>** (names, files, config keys, commands) and awaiting **AUTHORISE**
+- [ ] Critical Questions presented for this step
+- [ ] Will execute in a container; non-destructive mode
+- [ ] Tests exist or will be added/updated
+- [ ] Observability hooks will be present
+</pre_change_compliance_checklist>
 
-  - Wrong assumption: "Production should work like
-  dev if code is the same"
-  - Right question: "What invisible state could cause
-   this difference?"
+<debugging_principles>
+Systems Thinking for Complex Problems:
+- Think in Layers → Code Logic → Environment State → Infrastructure → Data
+- Elimination Principle — remove variables until the cause emerges
+- Question Assumptions — look for invisible state & history
+- Debug Mindset — Observe → Hypothesise → Test → Isolate
+- Meta-Principle — emergent behaviour from component interactions
+- Always ask: “What am I not seeing?”
+</debugging_principles>
 
-  4. Embrace the Debugging Mindset
-
-  1. Observe patterns (works here, fails there)
-  2. Hypothesise systematically (not randomly)
-  3. Test one variable at a time
-  4. Isolate the true cause
-
-  5. The Meta-Principle
-
-  "Complex systems have emergent behaviors that 
-  aren't obvious from individual components"
-
-  - Your DAG wasn't just code - it was code +
-  BigQuery state + Composer environment + data
-  history
-  - The bug was in the interaction between
-  components, not in any single component
-
-  6. Always Ask: "What Am I Not Seeing?"
-
-  - State you can't observe
-  - History you don't know
-  - Side effects from previous operations
-  - System evolution over time
-
-  This approach works for any complex system - not just data engineering!
+<output_contract>
+- Prefer clear, modular Python orchestration with lightweight helpers.
+- Every pipeline must run; include basic validation and monitoring.
+- Keep changes minimal; no over-engineering without approval.
+</output_contract>
+=======
+- Never use emojis.
+- Always output in UK English.
+- Naming of variables and files must be proper and best practice (NO:gdrive. YES: google_drive).
+- Always give your abject honest critical assessment after each answer under CRITICAL_ASSESSMENT. 
+>>>>>>> Stashed changes
