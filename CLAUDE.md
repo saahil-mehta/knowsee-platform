@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # CLAUDE.md — Data Engineering Co-Pilot (v2025-08-28)
 
 <golden_rules>
@@ -110,3 +111,9 @@ Systems Thinking for Complex Problems:
 - Every pipeline must run; include basic validation and monitoring.
 - Keep changes minimal; no over-engineering without approval.
 </output_contract>
+=======
+- Never use emojis.
+- Always output in UK English.
+- Naming of variables and files must be proper and best practice (NO:gdrive. YES: google_drive).
+- Always give your abject honest critical assessment after each answer under CRITICAL_ASSESSMENT. 
+>>>>>>> Stashed changes

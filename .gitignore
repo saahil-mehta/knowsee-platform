@@ -1,12 +1,8 @@
-# Environment and secrets
-.env
-*.env
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
 build/
 develop-eggs/
@@ -23,22 +19,44 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Environment files
+.env
+.env.local
+.env.*.local
 
 # IDE
-.DS_Store
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
-# Data and logs
-data/
-logs/
+# OS
+.DS_Store
+Thumbs.db
+
+# Google credentials (NEVER COMMIT)
+*credentials*.json
+*service-account*.json
+token.json
+
+# Logs
 *.log
-*.duckdb
+logs/
 
-# Generated pipelines and recipes
-pipelines/
-recipes/
-schemas/
-samples/
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Deployment
+*.pem
+*.key
