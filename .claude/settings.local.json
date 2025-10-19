@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(tree:*)",
+      "WebFetch(domain:docs.copilotkit.ai)",
+      "WebFetch(domain:www.copilotkit.ai)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "Read(//Users/saahilmehta/Documents/GitHub/agent-starter-pack/**)"
     ],
     "deny": [],
     "ask": []
