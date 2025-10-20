@@ -73,3 +73,6 @@ apps/**/node_modules/
 apps/**/.next/
 apps/**/.turbo/
 apps/**/out/
+*.tfstate
+knowsee-starter/deployment/terraform/dev/terraform.tfstate.backup
+*.txt
