@@ -1,0 +1,547 @@
+data.google_project.dev_project: Reading...
+data.google_project.dev_project: Read complete after 2s [id=projects/sp-data-platform-dev]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # google_bigquery_dataset.feedback_dataset will be created
+  + resource "google_bigquery_dataset" "feedback_dataset" {
+      + creation_time              = (known after apply)
+      + dataset_id                 = "knowsee_starter_feedback"
+      + default_collation          = (known after apply)
+      + delete_contents_on_destroy = false
+      + effective_labels           = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + etag                       = (known after apply)
+      + friendly_name              = "knowsee-starter_feedback"
+      + id                         = (known after apply)
+      + is_case_insensitive        = (known after apply)
+      + last_modified_time         = (known after apply)
+      + location                   = "europe-west2"
+      + max_time_travel_hours      = (known after apply)
+      + project                    = "sp-data-platform-dev"
+      + self_link                  = (known after apply)
+      + storage_billing_model      = (known after apply)
+      + terraform_labels           = {
+          + "goog-terraform-provisioned" = "true"
+        }
+
+      + access (known after apply)
+    }
+
+  # google_bigquery_dataset.telemetry_logs_dataset will be created
+  + resource "google_bigquery_dataset" "telemetry_logs_dataset" {
+      + creation_time              = (known after apply)
+      + dataset_id                 = "knowsee_starter_telemetry"
+      + default_collation          = (known after apply)
+      + delete_contents_on_destroy = false
+      + effective_labels           = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + etag                       = (known after apply)
+      + friendly_name              = "knowsee-starter_telemetry"
+      + id                         = (known after apply)
+      + is_case_insensitive        = (known after apply)
+      + last_modified_time         = (known after apply)
+      + location                   = "europe-west2"
+      + max_time_travel_hours      = (known after apply)
+      + project                    = "sp-data-platform-dev"
+      + self_link                  = (known after apply)
+      + storage_billing_model      = (known after apply)
+      + terraform_labels           = {
+          + "goog-terraform-provisioned" = "true"
+        }
+
+      + access (known after apply)
+    }
+
+  # google_discovery_engine_data_store.data_store_dev will be created
+  + resource "google_discovery_engine_data_store" "data_store_dev" {
+      + content_config               = "NO_CONTENT"
+      + create_advanced_site_search  = false
+      + create_time                  = (known after apply)
+      + data_store_id                = "knowsee-starter-datastore"
+      + default_schema_id            = (known after apply)
+      + display_name                 = "knowsee-starter-datastore"
+      + id                           = (known after apply)
+      + industry_vertical            = "GENERIC"
+      + location                     = "us"
+      + name                         = (known after apply)
+      + project                      = "sp-data-platform-dev"
+      + skip_default_schema_creation = false
+      + solution_types               = [
+          + "SOLUTION_TYPE_SEARCH",
+        ]
+    }
+
+  # google_discovery_engine_search_engine.search_engine_dev will be created
+  + resource "google_discovery_engine_search_engine" "search_engine_dev" {
+      + collection_id     = "default_collection"
+      + create_time       = (known after apply)
+      + data_store_ids    = [
+          + "knowsee-starter-datastore",
+        ]
+      + display_name      = "Search Engine App Staging"
+      + engine_id         = "knowsee-starter-search"
+      + id                = (known after apply)
+      + industry_vertical = "GENERIC"
+      + location          = "us"
+      + name              = (known after apply)
+      + project           = "sp-data-platform-dev"
+      + update_time       = (known after apply)
+
+      + search_engine_config {
+          + search_tier = "SEARCH_TIER_ENTERPRISE"
+        }
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/aiplatform.user"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/aiplatform.user"
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/cloudtrace.agent"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/cloudtrace.agent"
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/discoveryengine.editor"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/discoveryengine.editor"
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/logging.logWriter"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/logging.logWriter"
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/serviceusage.serviceUsageConsumer"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/serviceusage.serviceUsageConsumer"
+    }
+
+  # google_project_iam_member.app_sa_roles["dev,roles/storage.admin"] will be created
+  + resource "google_project_iam_member" "app_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/storage.admin"
+    }
+
+  # google_project_iam_member.bigquery_data_editor will be created
+  + resource "google_project_iam_member" "bigquery_data_editor" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/bigquery.dataEditor"
+    }
+
+  # google_project_iam_member.default_compute_sa_storage_object_creator will be created
+  + resource "google_project_iam_member" "default_compute_sa_storage_object_creator" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:5994005714-compute@developer.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/cloudbuild.builds.builder"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/aiplatform.user"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/aiplatform.user"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/cloudtrace.agent"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/cloudtrace.agent"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/discoveryengine.editor"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/discoveryengine.editor"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/logging.logWriter"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/logging.logWriter"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/serviceusage.serviceUsageConsumer"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/serviceusage.serviceUsageConsumer"
+    }
+
+  # google_project_iam_member.vertex_ai_sa_permissions["dev,roles/storage.admin"] will be created
+  + resource "google_project_iam_member" "vertex_ai_sa_permissions" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + role    = "roles/storage.admin"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/aiplatform.user"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/aiplatform.user"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/artifactregistry.writer"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/artifactregistry.writer"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/bigquery.connectionAdmin"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/bigquery.connectionAdmin"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/bigquery.dataEditor"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/bigquery.dataEditor"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/bigquery.jobUser"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/bigquery.jobUser"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/bigquery.readSessionUser"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/bigquery.readSessionUser"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/discoveryengine.admin"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/discoveryengine.admin"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/logging.logWriter"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/logging.logWriter"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/resourcemanager.projectIamAdmin"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/resourcemanager.projectIamAdmin"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/run.invoker"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/run.invoker"
+    }
+
+  # google_project_iam_member.vertexai_pipeline_sa_roles["dev,roles/storage.admin"] will be created
+  + resource "google_project_iam_member" "vertexai_pipeline_sa_roles" {
+      + etag    = (known after apply)
+      + id      = (known after apply)
+      + member  = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + project = "sp-data-platform-dev"
+      + role    = "roles/storage.admin"
+    }
+
+  # google_project_service.services[0] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "aiplatform.googleapis.com"
+    }
+
+  # google_project_service.services[1] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "cloudbuild.googleapis.com"
+    }
+
+  # google_project_service.services[2] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "run.googleapis.com"
+    }
+
+  # google_project_service.services[3] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "bigquery.googleapis.com"
+    }
+
+  # google_project_service.services[4] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "discoveryengine.googleapis.com"
+    }
+
+  # google_project_service.services[5] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "cloudresourcemanager.googleapis.com"
+    }
+
+  # google_project_service.services[6] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "iam.googleapis.com"
+    }
+
+  # google_project_service.services[7] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "bigquery.googleapis.com"
+    }
+
+  # google_project_service.services[8] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "serviceusage.googleapis.com"
+    }
+
+  # google_project_service.services[9] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "logging.googleapis.com"
+    }
+
+  # google_project_service.services[10] will be created
+  + resource "google_project_service" "services" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = "sp-data-platform-dev"
+      + service            = "cloudtrace.googleapis.com"
+    }
+
+  # google_project_service_identity.vertex_sa will be created
+  + resource "google_project_service_identity" "vertex_sa" {
+      + email   = (known after apply)
+      + id      = (known after apply)
+      + member  = (known after apply)
+      + project = "sp-data-platform-dev"
+      + service = "aiplatform.googleapis.com"
+    }
+
+  # google_service_account.app_sa will be created
+  + resource "google_service_account" "app_sa" {
+      + account_id   = "knowsee-starter-app"
+      + disabled     = false
+      + display_name = "knowsee-starter Agent Service Account"
+      + email        = "knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + id           = (known after apply)
+      + member       = "serviceAccount:knowsee-starter-app@sp-data-platform-dev.iam.gserviceaccount.com"
+      + name         = (known after apply)
+      + project      = "sp-data-platform-dev"
+      + unique_id    = (known after apply)
+    }
+
+  # google_service_account.vertexai_pipeline_app_sa["dev"] will be created
+  + resource "google_service_account" "vertexai_pipeline_app_sa" {
+      + account_id   = "knowsee-starter-rag"
+      + disabled     = false
+      + display_name = "Vertex AI Pipeline app SA"
+      + email        = "knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + id           = (known after apply)
+      + member       = "serviceAccount:knowsee-starter-rag@sp-data-platform-dev.iam.gserviceaccount.com"
+      + name         = (known after apply)
+      + project      = "sp-data-platform-dev"
+      + unique_id    = (known after apply)
+    }
+
+  # google_storage_bucket.data_ingestion_PIPELINE_GCS_ROOT will be created
+  + resource "google_storage_bucket" "data_ingestion_PIPELINE_GCS_ROOT" {
+      + effective_labels            = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + force_destroy               = true
+      + id                          = (known after apply)
+      + location                    = "EUROPE-WEST2"
+      + name                        = "sp-data-platform-dev-knowsee-starter-rag"
+      + project                     = "sp-data-platform-dev"
+      + project_number              = (known after apply)
+      + public_access_prevention    = (known after apply)
+      + rpo                         = (known after apply)
+      + self_link                   = (known after apply)
+      + storage_class               = "STANDARD"
+      + terraform_labels            = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + time_created                = (known after apply)
+      + uniform_bucket_level_access = true
+      + updated                     = (known after apply)
+      + url                         = (known after apply)
+
+      + soft_delete_policy (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # google_storage_bucket.logs_data_bucket will be created
+  + resource "google_storage_bucket" "logs_data_bucket" {
+      + effective_labels            = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + force_destroy               = false
+      + id                          = (known after apply)
+      + location                    = "EUROPE-WEST2"
+      + name                        = "sp-data-platform-dev-knowsee-starter-logs"
+      + project                     = "sp-data-platform-dev"
+      + project_number              = (known after apply)
+      + public_access_prevention    = (known after apply)
+      + rpo                         = (known after apply)
+      + self_link                   = (known after apply)
+      + storage_class               = "STANDARD"
+      + terraform_labels            = {
+          + "goog-terraform-provisioned" = "true"
+        }
+      + time_created                = (known after apply)
+      + uniform_bucket_level_access = true
+      + updated                     = (known after apply)
+      + url                         = (known after apply)
+
+      + soft_delete_policy (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # module.feedback_export_to_bigquery.google_logging_project_sink.sink[0] will be created
+  + resource "google_logging_project_sink" "sink" {
+      + destination            = "bigquery.googleapis.com/projects/sp-data-platform-dev/datasets/knowsee_starter_feedback"
+      + disabled               = false
+      + filter                 = "jsonPayload.log_type=\"feedback\" jsonPayload.service_name=\"knowsee-starter\""
+      + id                     = (known after apply)
+      + name                   = "knowsee-starter_feedback"
+      + project                = "sp-data-platform-dev"
+      + unique_writer_identity = true
+      + writer_identity        = (known after apply)
+
+      + bigquery_options {
+          + use_partitioned_tables = true
+        }
+    }
+
+  # module.log_export_to_bigquery.google_logging_project_sink.sink[0] will be created
+  + resource "google_logging_project_sink" "sink" {
+      + destination            = "bigquery.googleapis.com/projects/sp-data-platform-dev/datasets/knowsee_starter_telemetry"
+      + disabled               = false
+      + filter                 = "labels.service_name=\"knowsee-starter\" labels.type=\"agent_telemetry\""
+      + id                     = (known after apply)
+      + name                   = "knowsee-starter_telemetry"
+      + project                = "sp-data-platform-dev"
+      + unique_writer_identity = true
+      + writer_identity        = (known after apply)
+
+      + bigquery_options {
+          + use_partitioned_tables = true
+        }
+    }
+
+Plan: 47 to add, 0 to change, 0 to destroy.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.

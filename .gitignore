@@ -60,3 +60,19 @@ htmlcov/
 # Deployment
 *.pem
 *.key
+
+# Node / Next.js
+node_modules/
+.next/
+.turbo/
+out/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+apps/**/node_modules/
+apps/**/.next/
+apps/**/.turbo/
+apps/**/out/
+*.tfstate
+knowsee-starter/deployment/terraform/dev/terraform.tfstate.backup
+*.txt
