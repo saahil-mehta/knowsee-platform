@@ -84,7 +84,7 @@ class AgentEngineApp(AdkApp):
 )
 @click.option(
     "--agent-name",
-    default="sagent",
+    default="knowsee",
     help="Name for the agent engine",
 )
 @click.option(

@@ -1,5 +1,5 @@
 # Project name used for resource naming
-project_name = "sagent"
+project_name = "knowsee"
 
 # Your Dev Google Cloud project id
 dev_project_id = "your-dev-project-id"

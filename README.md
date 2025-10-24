@@ -1,4 +1,4 @@
-# sagent
+# knowsee
 
 ADK RAG agent for document retrieval and Q&A. Includes a data pipeline for ingesting and indexing documents into Vertex AI Search or Vector Search.
 Agent generated with [`googleCloudPlatform/agent-starter-pack`](https://github.com/GoogleCloudPlatform/agent-starter-pack) version `0.17.5`
@@ -8,7 +8,7 @@ Agent generated with [`googleCloudPlatform/agent-starter-pack`](https://github.c
 This project is organized as follows:
 
 ```
-sagent/
+knowsee/
 ├── app/                 # Core application code
 │   ├── agent.py         # Main agent logic
 │   ├── agent_engine_app.py # Agent Engine application logic

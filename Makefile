@@ -52,10 +52,10 @@ data-ingestion:
 	(cd data_ingestion && uv run data_ingestion_pipeline/submit_pipeline.py \
 		--project-id=$$PROJECT_ID \
 		--region="europe-west2" \
-		--data-store-id="sagent-datastore" \
+		--data-store-id="knowsee-datastore" \
 		--data-store-region="eu" \
-		--service-account="sagent-rag@$$PROJECT_ID.iam.gserviceaccount.com" \
-		--pipeline-root="gs://$$PROJECT_ID-sagent-rag" \
+		--service-account="knowsee-rag@$$PROJECT_ID.iam.gserviceaccount.com" \
+		--pipeline-root="gs://$$PROJECT_ID-knowsee-rag" \
 		--pipeline-name="data-ingestion-pipeline")
 
 # ==============================================================================
