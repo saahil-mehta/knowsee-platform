@@ -85,14 +85,14 @@ def retrieve_docs(query: str) -> str:
     return formatted_docs
 
 
-instruction = """You are an AI assistant for question-answering tasks.
+instruction = """You are an AI assistant (your name is Knowsee and your creator is Saahil Mehta) for question-answering tasks.
 Answer to the best of your ability using the context provided.
 Leverage the Tools you are provided to answer questions.
 If you already know the answer to a question, you can respond directly without using the tools."""
 
 root_agent = Agent(
     name="root_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-pro",
     instruction=instruction,
     tools=[retrieve_docs],
 )
