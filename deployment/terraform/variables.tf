@@ -15,7 +15,7 @@
 variable "project_name" {
   type        = string
   description = "Project name used as a base for resource naming"
-  default     = "sagent"
+  default     = "knowsee"
 }
 
 variable "prod_project_id" {
@@ -42,7 +42,7 @@ variable "region" {
 variable "host_connection_name" {
   description = "Name of the host connection to create in Cloud Build"
   type        = string
-  default     = "sagent-github-connection"
+  default     = "knowsee-github-connection"
 }
 
 variable "repository_name" {
@@ -53,7 +53,7 @@ variable "repository_name" {
 variable "telemetry_logs_filter" {
   type        = string
   description = "Log Sink filter for capturing telemetry data. Captures logs with the `traceloop.association.properties.log_type` attribute set to `tracing`."
-  default     = "labels.service_name=\"sagent\" labels.type=\"agent_telemetry\""
+  default     = "labels.service_name=\"knowsee\" labels.type=\"agent_telemetry\""
 }
 
 variable "feedback_logs_filter" {

@@ -43,7 +43,7 @@ EMBEDDING_COLUMN = "embedding"
 TOP_K = 5
 
 data_store_region = os.getenv("DATA_STORE_REGION", "eu")
-data_store_id = os.getenv("DATA_STORE_ID", "sagent-datastore")
+data_store_id = os.getenv("DATA_STORE_ID", "knowsee-datastore")
 
 retriever = get_retriever(
     project_id=project_id,

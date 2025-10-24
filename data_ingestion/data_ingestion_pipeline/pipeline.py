@@ -27,7 +27,7 @@ def pipeline(
     chunk_overlap: int = 20,
     destination_table: str = "incremental_questions_embeddings",
     deduped_table: str = "questions_embeddings",
-    destination_dataset: str = "sagent_stackoverflow_data",
+    destination_dataset: str = "knowsee_stackoverflow_data",
     data_store_region: str = "",
     data_store_id: str = "",
 ) -> None:

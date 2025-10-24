@@ -1,5 +1,5 @@
 # Project name used for resource naming
-project_name = "sagent"
+project_name = "knowsee"
 
 # Your Production Google Cloud project id
 prod_project_id = "your-production-project-id"
@@ -13,7 +13,7 @@ cicd_runner_project_id = "your-cicd-project-id"
 repository_owner = "Your GitHub organization or username."
 
 # Name of the repository you added to Cloud Build
-repository_name = "sagent"
+repository_name = "knowsee"
 
 # The Google Cloud region you will use to deploy the infrastructure
 region = "europe-west2"
