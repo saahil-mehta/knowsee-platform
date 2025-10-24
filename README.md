@@ -13,6 +13,7 @@ knowsee/
 │   ├── agent.py         # Main agent logic
 │   ├── agent_engine_app.py # Agent Engine application logic
 │   └── utils/           # Utility functions and helpers
+├── frontend/            # CopilotKit + Next.js chat interface
 ├── .github/             # CI/CD pipeline configurations for GitHub Actions
 ├── deployment/          # Infrastructure and deployment scripts
 ├── notebooks/           # Jupyter notebooks for prototyping and evaluation
@@ -29,9 +30,12 @@ Before you begin, ensure you have:
 - **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
 - **Terraform**: For infrastructure deployment - [Install](https://developer.hashicorp.com/terraform/downloads)
 - **make**: Build automation tool - [Install](https://www.gnu.org/software/make/) (pre-installed on most Unix-based systems)
+- **Node.js 18+ and npm**: Required for the CopilotKit / Next.js frontend
 
 
 ## Quick Start (Local Testing)
+
+### Option 1: ADK Built-in UI (Quick Testing)
 
 Install required packages and launch the local development environment:
 
@@ -39,17 +43,42 @@ Install required packages and launch the local development environment:
 make install && make playground
 ```
 
+### Option 2: Modern Frontend (Full-Featured UI)
+
+Install dependencies and start the full-stack application:
+
+```bash
+# Install Python dependencies
+make install
+
+# Install frontend dependencies
+make install-frontend
+
+# Start API and frontend concurrently
+make dev
+```
+
+Then open:
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+See [frontend/README.md](frontend/README.md) for detailed frontend documentation.
+
 ## Commands
 
 | Command              | Description                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------------- |
 | `make install`       | Install all required dependencies using uv                                                  |
-| `make playground`    | Launch Streamlit interface for testing agent locally and remotely |
-| `make backend`       | Deploy agent to Agent Engine |
+| `make playground`    | Launch ADK built-in UI for testing agent                                                    |
+| `make api`           | Start FastAPI API server for frontend (port 8000)                                           |
+| `make frontend`      | Start Next.js frontend development server (port 3000)                                       |
+| `make dev`           | Start both API and frontend concurrently                                                    |
+| `make install-frontend` | Install frontend dependencies                                                            |
+| `make backend`       | Deploy agent to Agent Engine                                                                |
 | `make test`          | Run unit and integration tests                                                              |
 | `make lint`          | Run code quality checks (codespell, ruff, mypy)                                             |
-| `make setup-dev-env` | Set up development environment resources using Terraform                         |
-| `make data-ingestion`| Run data ingestion pipeline in the Dev environment                                           |
+| `make setup-dev-env` | Set up development environment resources using Terraform                                    |
+| `make data-ingestion`| Run data ingestion pipeline in the Dev environment                                          |
 | `uv run jupyter lab` | Launch Jupyter notebook                                                                     |
 
 For full command options and usage, refer to the [Makefile](Makefile).
