@@ -153,6 +153,21 @@ tmp*
 npm-debug.log
 yarn-error.log
 
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.next
+frontend/out
+.next/
+out/
+
+# Next.js build output
+.vercel
+
+# Next.js environment variables
+frontend/.env*.local
+.env*.local
+
 # IDEs and editors
 .idea/
 .project
