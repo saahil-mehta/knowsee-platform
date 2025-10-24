@@ -2,4 +2,4 @@
 - Always output in UK English.
 - Naming of variables and files must be proper and best practice (NO:gdrive. YES: google_drive).
 - Always give your abject honest critical assessment after each answer under CRITICAL_ASSESSMENT. 
-- Refer to knowsee/sagent/GEMINI.md for directives on structure.
+- Refer to GEMINI.md for directives on structure.
