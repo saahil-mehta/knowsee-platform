@@ -11,7 +11,7 @@ install:
 # Playground Targets
 # ==============================================================================
 
-# Launch local dev playground
+# Launch local dev playground (ADK built-in UI)
 playground:
 	@echo "==============================================================================="
 	@echo "| 🚀 Starting your agent playground...                                        |"
@@ -21,6 +21,49 @@ playground:
 	@echo "| 🔍 IMPORTANT: Select the 'app' folder to interact with your agent.          |"
 	@echo "==============================================================================="
 	uv run adk web . --port 8501 --reload_agents
+
+# ==============================================================================
+# Frontend & API Targets
+# ==============================================================================
+
+# Install frontend dependencies
+install-frontend:
+	@echo "📦 Installing frontend dependencies..."
+	cd frontend && npm install
+
+# Start FastAPI API server for frontend
+api:
+	@echo "==============================================================================="
+	@echo "| 🚀 Starting Knowsee API server...                                          |"
+	@echo "|                                                                             |"
+	@echo "| API: http://localhost:8000                                                  |"
+	@echo "| Docs: http://localhost:8000/docs                                            |"
+	@echo "==============================================================================="
+	uv run python -m app.api
+
+# Start Next.js frontend development server
+frontend:
+	@echo "==============================================================================="
+	@echo "| 🚀 Starting Knowsee frontend...                                            |"
+	@echo "|                                                                             |"
+	@echo "| Frontend: http://localhost:3000                                             |"
+	@echo "| Make sure API is running on http://localhost:8000                           |"
+	@echo "==============================================================================="
+	cd frontend && npm run dev
+
+# Start both API and frontend concurrently
+dev:
+	@echo "==============================================================================="
+	@echo "| 🚀 Starting full development environment...                                |"
+	@echo "|                                                                             |"
+	@echo "| API: http://localhost:8000                                                  |"
+	@echo "| Frontend: http://localhost:3000                                             |"
+	@echo "==============================================================================="
+	@command -v uv >/dev/null 2>&1 || { echo "uv not found. Please install uv"; exit 1; }
+	@command -v npm >/dev/null 2>&1 || { echo "npm not found. Please install Node.js"; exit 1; }
+	@bash -c 'set -euo pipefail; trap "trap - INT TERM EXIT; kill 0" INT TERM EXIT; \
+		uv run python -m app.api & \
+		cd frontend && npm run dev'
 
 # ==============================================================================
 # Backend Deployment Targets
