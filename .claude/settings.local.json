@@ -7,7 +7,17 @@
       "WebFetch(domain:www.copilotkit.ai)",
       "WebFetch(domain:github.com)",
       "Bash(npm install:*)",
-      "Read(//Users/saahilmehta/Documents/GitHub/agent-starter-pack/**)"
+      "Read(//Users/saahilmehta/Documents/GitHub/agent-starter-pack/**)",
+      "Bash(make setup-dev-env)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Read(//Users/saahilmehta/Documents/GitHub/**)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(npx create-next-app:*)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm init:*)",
+      "Bash(python -m pip:*)"
     ],
     "deny": [],
     "ask": []
