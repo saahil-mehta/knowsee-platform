@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
+import "./fonts.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,13 +32,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
-      <head>
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased" style={{ fontFamily: "'Satoshi', var(--font-geist-sans), system-ui, sans-serif" }}>
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
