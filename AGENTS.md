@@ -1,0 +1,2 @@
+- Refer to CLAUDE.md for instructions
+- Refer to GEMINI.md for directives on structure.
