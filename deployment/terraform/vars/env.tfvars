@@ -16,7 +16,7 @@ repository_owner = "Your GitHub organization or username."
 repository_name = "knowsee"
 
 # The Google Cloud region you will use to deploy the infrastructure
-region = "europe-west2"
+region                 = "europe-west2"
 pipeline_cron_schedule = "0 0 * * 0"
 #The value can only be one of "global", "us" and "eu".
 data_store_region = "eu"
