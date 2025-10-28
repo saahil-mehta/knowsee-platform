@@ -13,6 +13,12 @@
 # limitations under the License.
 
 locals {
+  # Internal locals for project IDs
+  deploy_project_ids = {
+    staging = var.staging_project_id
+    prod    = var.prod_project_id
+  }
+
   service_accounts = merge(
     # CICD Runner Service Account
     {

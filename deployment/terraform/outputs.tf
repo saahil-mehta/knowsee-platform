@@ -15,7 +15,7 @@
 # This file contains terraform outputs for the knowsee infrastructure.
 # Add outputs here as needed for use by other systems or for documentation.
 
-# Example outputs (commented out for now):
+# Example outputs (uncomment and customize as needed):
 
 # output "service_account_emails" {
 #   description = "Emails of created service accounts"
@@ -27,9 +27,13 @@
 
 # output "bucket_names" {
 #   description = "Names of created storage buckets"
+#   value       = module.storage_buckets.bucket_names
+# }
+
+# output "data_store_ids" {
+#   description = "Discovery Engine data store IDs"
 #   value = {
-#     load_test = google_storage_bucket.bucket_load_test_results.name
-#     logs      = [for bucket in google_storage_bucket.logs_data_bucket : bucket.name]
-#     rag       = [for bucket in google_storage_bucket.data_ingestion_pipeline_gcs_root : bucket.name]
+#     staging = module.discovery_engine_data_store_staging.data_store_ids
+#     prod    = module.discovery_engine_data_store_prod.data_store_ids
 #   }
 # }

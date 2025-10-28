@@ -12,33 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: Project IAM bindings use google_project_iam_member (additive) rather than
-# the modules/iam/project module which uses google_project_iam_binding (authoritative).
+# NOTE: Project IAM bindings use google_project_iam_member (additive) via the
+# iam/project_member module rather than google_project_iam_binding (authoritative).
 # This is safer as it won't override existing IAM bindings on the project.
-# These will remain as direct resources in main.tf.
 
 locals {
-  # CICD Service Account roles on CICD project
-  cicd_sa_cicd_project_roles = {
-    roles  = var.cicd_roles
-    member = "serviceAccount:${var.project_name}-cb@${var.cicd_runner_project_id}.iam.gserviceaccount.com"
-  }
+  # CICD Service Account email
+  cicd_sa_email = "${var.project_name}-cb@${var.cicd_runner_project_id}.iam.gserviceaccount.com"
 
-  # CICD Service Account roles on deploy projects (staging, prod)
-  cicd_sa_deploy_project_roles = {
-    roles  = var.cicd_sa_deployment_required_roles
-    member = "serviceAccount:${var.project_name}-cb@${var.cicd_runner_project_id}.iam.gserviceaccount.com"
-  }
+  # Role lists by purpose
+  cicd_sa_cicd_project_roles   = var.cicd_roles
+  cicd_sa_deploy_project_roles = var.cicd_sa_deployment_required_roles
+  app_sa_roles                 = var.app_sa_roles
+  vertexai_pipeline_sa_roles   = var.pipelines_roles
+}
 
-  # App Service Account roles on deploy projects
-  app_sa_roles = {
-    roles = var.app_sa_roles
-  }
-
-  # Vertex AI Pipeline Service Account roles on deploy projects
-  vertexai_pipeline_sa_roles = {
-    roles = var.pipelines_roles
-  }
+output "cicd_sa_email" {
+  value       = local.cicd_sa_email
+  description = "CICD Service Account email"
 }
 
 output "cicd_sa_cicd_project_roles" {

@@ -12,65 +12,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: Discovery Engine resources don't have a module in data-platform-ingestion-pipelines.
-# These definitions will remain as direct resources in main.tf.
-
 locals {
   # Data stores (one per deploy environment: staging, prod)
-  data_stores = {
+  data_stores_staging = {
     staging = {
-      location                    = var.data_store_region
-      project                     = var.staging_project_id
-      data_store_id               = "${var.project_name}-datastore"
-      display_name                = "${var.project_name}-datastore"
-      industry_vertical           = "GENERIC"
-      content_config              = "NO_CONTENT"
-      solution_types              = ["SOLUTION_TYPE_SEARCH"]
-      create_advanced_site_search = false
-      provider_alias              = "staging_billing_override"
+      location          = var.data_store_region
+      project           = var.staging_project_id
+      data_store_id     = "${var.project_name}-datastore"
+      display_name      = "${var.project_name}-datastore"
+      industry_vertical = "GENERIC"
+      content_config    = "NO_CONTENT"
+      solution_types    = ["SOLUTION_TYPE_SEARCH"]
     }
+  }
+
+  data_stores_prod = {
     prod = {
-      location                    = var.data_store_region
-      project                     = var.prod_project_id
-      data_store_id               = "${var.project_name}-datastore"
-      display_name                = "${var.project_name}-datastore"
-      industry_vertical           = "GENERIC"
-      content_config              = "NO_CONTENT"
-      solution_types              = ["SOLUTION_TYPE_SEARCH"]
-      create_advanced_site_search = false
-      provider_alias              = "prod_billing_override"
+      location          = var.data_store_region
+      project           = var.prod_project_id
+      data_store_id     = "${var.project_name}-datastore"
+      display_name      = "${var.project_name}-datastore"
+      industry_vertical = "GENERIC"
+      content_config    = "NO_CONTENT"
+      solution_types    = ["SOLUTION_TYPE_SEARCH"]
     }
   }
 
   # Search engines (one per deploy environment: staging, prod)
-  search_engines = {
+  # Note: data_store_ids will be populated from module outputs in main.tf
+  search_engines_staging = {
     staging = {
-      project        = var.staging_project_id
-      engine_id      = "${var.project_name}-search"
-      collection_id  = "default_collection"
-      display_name   = "Search Engine App Staging"
-      search_tier    = "SEARCH_TIER_ENTERPRISE"
-      provider_alias = "staging_billing_override"
-      # data_store_id and location will be set dynamically from the data_store resource
+      project           = var.staging_project_id
+      engine_id         = "${var.project_name}-search"
+      collection_id     = "default_collection"
+      display_name      = "Search Engine App Staging"
+      location          = var.data_store_region
+      data_store_ids    = [] # Will be populated dynamically in main.tf
+      industry_vertical = "GENERIC"
+      search_engine_config = {
+        search_tier    = "SEARCH_TIER_ENTERPRISE"
+        search_add_ons = []
+      }
     }
+  }
+
+  search_engines_prod = {
     prod = {
-      project        = var.prod_project_id
-      engine_id      = "${var.project_name}-search"
-      collection_id  = "default_collection"
-      display_name   = "Search Engine App Prod"
-      search_tier    = "SEARCH_TIER_ENTERPRISE"
-      provider_alias = "prod_billing_override"
-      # data_store_id and location will be set dynamically from the data_store resource
+      project           = var.prod_project_id
+      engine_id         = "${var.project_name}-search"
+      collection_id     = "default_collection"
+      display_name      = "Search Engine App Prod"
+      location          = var.data_store_region
+      data_store_ids    = [] # Will be populated dynamically in main.tf
+      industry_vertical = "GENERIC"
+      search_engine_config = {
+        search_tier    = "SEARCH_TIER_ENTERPRISE"
+        search_add_ons = []
+      }
     }
   }
 }
 
-output "data_stores" {
-  value       = local.data_stores
-  description = "Map of discovery engine data store definitions"
+output "data_stores_staging" {
+  value       = local.data_stores_staging
+  description = "Staging discovery engine data store definitions"
 }
 
-output "search_engines" {
-  value       = local.search_engines
-  description = "Map of discovery engine search engine definitions"
+output "data_stores_prod" {
+  value       = local.data_stores_prod
+  description = "Prod discovery engine data store definitions"
+}
+
+output "search_engines_staging" {
+  value       = local.search_engines_staging
+  description = "Staging discovery engine search engine definitions"
+}
+
+output "search_engines_prod" {
+  value       = local.search_engines_prod
+  description = "Prod discovery engine search engine definitions"
 }
