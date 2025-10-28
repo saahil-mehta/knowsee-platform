@@ -211,3 +211,4 @@ my_env.tfvars
 .env
 .requirements.txt
 .scratchpad.txt
+.review-scratchpad.txt
