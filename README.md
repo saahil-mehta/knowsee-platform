@@ -1,126 +1,311 @@
-# knowsee
+# Knowsee
 
-ADK RAG agent for document retrieval and Q&A. Includes a data pipeline for ingesting and indexing documents into Vertex AI Search or Vector Search.
-Agent generated with [`googleCloudPlatform/agent-starter-pack`](https://github.com/GoogleCloudPlatform/agent-starter-pack) version `0.17.5`
+Production-ready RAG agent for document retrieval and question-answering. Built with Google ADK, Vertex AI Search, and CopilotKit frontend. Includes complete infrastructure automation, data ingestion pipeline, and deployment workflows.
+
+Generated with [`googleCloudPlatform/agent-starter-pack`](https://github.com/GoogleCloudPlatform/agent-starter-pack) version `0.17.5`
+
+## System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Frontend Layer (Next.js + CopilotKit)                                    │
+│ - Modern chat UI with real-time streaming                                │
+│ - Dark mode, responsive design, OKLCH colour system                      │
+│ - Deployed to Cloud Run or served locally                                │
+└─────────────────┬────────────────────────────────────────────────────────┘
+                  │ HTTP/WebSocket
+┌─────────────────▼────────────────────────────────────────────────────────┐
+│ API Layer (FastAPI + AG-UI Protocol)                                     │
+│ - RESTful endpoints for agent interaction                                │
+│ - CORS middleware for frontend access                                    │
+│ - Health checks and monitoring                                           │
+└─────────────────┬────────────────────────────────────────────────────────┘
+                  │ Python SDK
+┌─────────────────▼────────────────────────────────────────────────────────┐
+│ Agent Layer (Google ADK)                                                 │
+│ - Gemini 2.5 Pro for reasoning and response generation                   │
+│ - Custom tools: retrieve_docs for RAG operations                         │
+│ - Session management and conversation history                            │
+└─────────────────┬────────────────────────────────────────────────────────┘
+                  │ Retrieval Pipeline
+┌─────────────────▼────────────────────────────────────────────────────────┐
+│ Retrieval Layer                                                          │
+│ - Vertex AI Search for semantic search over indexed documents            │
+│ - text-embedding-005 for query and document embeddings                   │
+│ - Vertex AI Rank API for re-ranking retrieved results                    │
+└─────────────────┬────────────────────────────────────────────────────────┘
+                  │ Document Index
+┌─────────────────▼────────────────────────────────────────────────────────┐
+│ Data Layer (Vertex AI Search Datastore)                                  │
+│ - Structured and unstructured documents                                  │
+│ - Managed by Vertex AI Pipelines for ingestion                           │
+│ - Chunking, embedding, and import orchestrated via KFP                   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Project Structure
 
-This project is organized as follows:
-
 ```
 knowsee/
-├── app/                 # Core application code
-│   ├── agent.py         # Main agent logic
-│   ├── agent_engine_app.py # Agent Engine application logic
-│   └── utils/           # Utility functions and helpers
-├── frontend/            # CopilotKit + Next.js chat interface
-├── .github/             # CI/CD pipeline configurations for GitHub Actions
-├── deployment/          # Infrastructure and deployment scripts
-├── notebooks/           # Jupyter notebooks for prototyping and evaluation
-├── tests/               # Unit, integration, and load tests
-├── Makefile             # Makefile for common commands
-├── GEMINI.md            # AI-assisted development guide
-└── pyproject.toml       # Project dependencies and configuration
+├── app/                         # Core application
+│   ├── agent.py                 # ADK agent definition with retrieval tool
+│   ├── api.py                   # FastAPI API wrapper (AG-UI protocol)
+│   ├── agent_engine_app.py      # Agent Engine deployment logic
+│   ├── retrievers.py            # Vertex AI Search retriever implementation
+│   ├── templates.py             # Document formatting for LLM context
+│   └── utils/                   # Tracing, GCS, deployment utilities
+├── frontend/                    # Next.js chat interface
+│   ├── src/app/                 # App Router pages and API routes
+│   ├── src/components/          # shadcn/ui components (Composer, MessageBubble, etc.)
+│   └── README.md                # Frontend architecture and component contracts
+├── data_ingestion/              # Vertex AI Pipelines for document ingestion
+│   ├── data_ingestion_pipeline/ # Pipeline components and orchestration
+│   └── README.md                # Pipeline architecture and usage
+├── deployment/                  # Infrastructure as code
+│   ├── terraform/               # Terraform modules and configurations
+│   │   ├── modules/             # Reusable modules (IAM, storage, Discovery Engine)
+│   │   ├── infra/               # Resource definitions (service accounts, buckets)
+│   │   ├── permissions/         # IAM binding definitions
+│   │   └── vars/                # Environment-specific tfvars
+│   └── README.md                # Deployment workflows and architecture
+├── .github/workflows/           # CI/CD pipelines (GitHub Actions)
+├── tests/                       # Unit, integration, and load tests
+├── notebooks/                   # Jupyter notebooks for prototyping
+├── Makefile                     # Task automation
+├── pyproject.toml               # Python dependencies (uv)
+├── GEMINI.md                    # AI-assisted development guide
+├── AGENTS.md                    # Agent-specific documentation
+└── CLAUDE.md                    # Claude-specific instructions
 ```
+
+## Core Components
+
+### Agent (`app/agent.py`)
+- **Model**: Gemini 2.5 Pro (reasoning), Gemini 2.5 Flash (tools)
+- **Tools**: `retrieve_docs` (Vertex AI Search + Rank API)
+- **Embeddings**: text-embedding-005 (768 dimensions)
+- **Retrieval**: Top-10 documents, re-ranked to top-5
+
+### API Server (`app/api.py`)
+- **Framework**: FastAPI with AG-UI protocol support
+- **Endpoints**:
+  - `/` - Agent interaction (AG-UI protocol)
+  - `/health` - Health check
+  - `/info` - Agent metadata
+- **Features**: CORS middleware, session management, OpenTelemetry tracing
+
+### Frontend (`frontend/`)
+- **Stack**: Next.js 15, shadcn/ui, CopilotKit
+- **Features**: Real-time streaming, dark mode, responsive design
+- **Deployment**: Docker + Cloud Run ready
+- See [frontend/README.md](frontend/README.md) for detailed architecture
+
+### Data Ingestion Pipeline (`data_ingestion/`)
+- **Orchestration**: Vertex AI Pipelines (Kubeflow)
+- **Steps**: Load → Chunk → Embed → Import to Datastore
+- **Scheduling**: Cron-based for periodic updates
+- See [data_ingestion/README.md](data_ingestion/README.md) for details
+
+### Infrastructure (`deployment/terraform/`)
+- **Architecture**: Multi-project (CICD, Staging, Production)
+- **Resources**: Service accounts, buckets, IAM bindings, Vertex AI datastores
+- **Modules**: Unified buckets module, Discovery Engine, IAM
+- See [deployment/README.md](deployment/README.md) for Terraform structure
 
 ## Requirements
 
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-- **Terraform**: For infrastructure deployment - [Install](https://developer.hashicorp.com/terraform/downloads)
-- **make**: Build automation tool - [Install](https://www.gnu.org/software/make/) (pre-installed on most Unix-based systems)
-- **Node.js 18+ and npm**: Required for the CopilotKit / Next.js frontend
+- **uv**: Python package manager - [Install](https://docs.astral.sh/uv/getting-started/installation/)
+- **Google Cloud SDK**: GCP CLI - [Install](https://cloud.google.com/sdk/docs/install)
+- **Terraform**: Infrastructure as code - [Install](https://developer.hashicorp.com/terraform/downloads)
+- **Node.js 18+**: For frontend - [Install](https://nodejs.org/)
+- **make**: Build automation (pre-installed on Unix systems)
 
+## Quick Start
 
-## Quick Start (Local Testing)
-
-### Option 1: ADK Built-in UI (Quick Testing)
-
-Install required packages and launch the local development environment:
-
-```bash
-make install && make playground
-```
-
-### Option 2: Modern Frontend (Full-Featured UI)
-
-Install dependencies and start the full-stack application:
+### Local Development
 
 ```bash
 # Install Python dependencies
 make install
 
-# Install frontend dependencies
-make install-frontend
+# Option 1: ADK built-in UI (quick testing)
+make playground
 
-# Start API and frontend concurrently
-make dev
+# Option 2: Full-stack development (API + Frontend)
+make install-frontend  # First time only
+make dev               # Starts API (8000) and frontend (3000)
 ```
 
-Then open:
+Access:
 - Frontend: [http://localhost:3000](http://localhost:3000)
 - API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- API Health: [http://localhost:8000/health](http://localhost:8000/health)
 
-See [frontend/README.md](frontend/README.md) for detailed frontend documentation.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `make install`       | Install all required dependencies using uv                                                  |
-| `make playground`    | Launch ADK built-in UI for testing agent                                                    |
-| `make api`           | Start FastAPI API server for frontend (port 8000)                                           |
-| `make frontend`      | Start Next.js frontend development server (port 3000)                                       |
-| `make dev`           | Start both API and frontend concurrently                                                    |
-| `make install-frontend` | Install frontend dependencies                                                            |
-| `make backend`       | Deploy agent to Agent Engine                                                                |
-| `make test`          | Run unit and integration tests                                                              |
-| `make lint`          | Run code quality checks (codespell, ruff, mypy)                                             |
-| `make setup-dev-env` | Set up development environment resources using Terraform                                    |
-| `make data-ingestion`| Run data ingestion pipeline in the Dev environment                                          |
-| `uv run jupyter lab` | Launch Jupyter notebook                                                                     |
-
-For full command options and usage, refer to the [Makefile](Makefile).
-
-
-## Usage
-
-This template follows a "bring your own agent" approach - you focus on your business logic, and the template handles everything else (UI, infrastructure, deployment, monitoring).
-
-1. **Prototype:** Build your Generative AI Agent using the intro notebooks in `notebooks/` for guidance. Use Vertex AI Evaluation to assess performance.
-2. **Integrate:** Import your agent into the app by editing `app/agent.py`.
-3. **Test:** Explore your agent functionality using the Streamlit playground with `make playground`. The playground offers features like chat history, user feedback, and various input types, and automatically reloads your agent on code changes.
-4. **Deploy:** Set up and initiate the CI/CD pipelines, customizing tests as necessary. Refer to the [deployment section](#deployment) for comprehensive instructions. For streamlined infrastructure deployment, simply run `uvx agent-starter-pack setup-cicd`. Check out the [`agent-starter-pack setup-cicd` CLI command](https://googlecloudplatform.github.io/agent-starter-pack/cli/setup_cicd.html). Currently supports GitHub with both Google Cloud Build and GitHub Actions as CI/CD runners.
-5. **Monitor:** Track performance and gather insights using Cloud Logging, Tracing, and the Looker Studio dashboard to iterate on your application.
-
-The project includes a `GEMINI.md` file that provides context for AI tools like Gemini CLI when asking questions about your template.
-
-
-## Deployment
-
-> **Note:** For a streamlined one-command deployment of the entire CI/CD pipeline and infrastructure using Terraform, you can use the [`agent-starter-pack setup-cicd` CLI command](https://googlecloudplatform.github.io/agent-starter-pack/cli/setup_cicd.html). Currently supports GitHub with both Google Cloud Build and GitHub Actions as CI/CD runners.
-
-### Dev Environment
-
-You can test deployment towards a Dev Environment using the following command:
+### Cloud Deployment
 
 ```bash
-gcloud config set project <your-dev-project-id>
+# 1. Configure development environment
+# Edit deployment/terraform/vars/dev.tfvars with your project ID
+
+# 2. Deploy infrastructure
+make setup-dev-env
+
+# 3. Run data ingestion pipeline
+make data-ingestion
+
+# 4. Deploy agent to Agent Engine
+gcloud config set project <your-project-id>
 make backend
 ```
 
+## Commands Reference
 
-The repository includes a Terraform configuration for the setup of the Dev Google Cloud project.
-See [deployment/README.md](deployment/README.md) for instructions.
+| Command | Description |
+|---------|-------------|
+| `make install` | Install Python dependencies with uv |
+| `make playground` | Launch ADK built-in UI for agent testing |
+| `make api` | Start FastAPI API server (port 8000) |
+| `make frontend` | Start Next.js frontend (port 3000) |
+| `make dev` | Start both API and frontend concurrently |
+| `make install-frontend` | Install frontend dependencies (Node.js) |
+| `make backend` | Deploy agent to Vertex AI Agent Engine |
+| `make setup-dev-env` | Provision GCP infrastructure with Terraform |
+| `make data-ingestion` | Run Vertex AI Pipelines for document ingestion |
+| `make test` | Run unit and integration tests |
+| `make lint` | Run code quality checks (ruff, mypy, codespell) |
+| `uv run jupyter lab` | Launch Jupyter for prototyping |
 
-### Production Deployment
+## Development Workflow
 
-The repository includes a Terraform configuration for the setup of a production Google Cloud project. Refer to [deployment/README.md](deployment/README.md) for detailed instructions on how to deploy the infrastructure and application.
+### 1. Prototype Agent Logic
+- Edit `app/agent.py` to define tools, prompts, and reasoning flow
+- Test with `make playground` for immediate feedback
+- Use `notebooks/` for experimentation and evaluation
 
+### 2. Integrate Frontend
+- API auto-reloads on agent changes
+- Frontend connects via AG-UI protocol
+- Customise UI in `frontend/src/components/`
+
+### 3. Configure Infrastructure
+- Edit `deployment/terraform/vars/dev.tfvars` for environment settings
+- Run `make setup-dev-env` to apply changes
+- Infrastructure includes: buckets, service accounts, IAM bindings, datastores
+
+### 4. Ingest Documents
+- Place documents in configured GCS bucket
+- Run `make data-ingestion` to trigger pipeline
+- Monitor progress in Vertex AI Pipelines console
+
+### 5. Deploy to Cloud
+- **Dev/Test**: `make backend` deploys to Agent Engine in current project
+- **Production**: Configure CI/CD pipelines in `.github/workflows/`
+- **Frontend**: Deploy to Cloud Run via Docker (see [frontend/README.md](frontend/README.md))
+
+## Frontend Architecture
+
+Modern chat interface built with:
+- **UI**: shadcn/ui (Radix primitives), OKLCH colour palette, Geist fonts
+- **Agent**: CopilotKit headless hooks for streaming and tool rendering
+- **State**: React Context + CopilotKit session management
+- **Theme**: next-themes with system-aware dark mode
+- **Animations**: Motion library for polished micro-interactions
+
+Key components:
+- `AppShell` - Layout wrapper with header
+- `AppSidebar` - Collapsible navigation with chat history
+- `ChatContainer` - Auto-scrolling message container
+- `MessageBubble` - User/assistant messages with markdown rendering
+- `Composer` - Multi-line input with auto-resize
+
+See [frontend/README.md](frontend/README.md) for complete architecture, component contracts, and extension guide.
+
+## Data Ingestion Pipeline
+
+Automated workflow for ingesting documents into Vertex AI Search:
+1. **Load**: Fetch documents from GCS bucket
+2. **Chunk**: Split documents into manageable segments
+3. **Embed**: Generate embeddings using text-embedding-005
+4. **Import**: Upload to Vertex AI Search datastore
+
+Pipeline features:
+- Vertex AI Pipelines orchestration (Kubeflow)
+- Cron scheduling for periodic updates
+- Monitoring via Vertex AI Pipelines console
+- Configurable chunk size, overlap, and embedding models
+
+See [data_ingestion/README.md](data_ingestion/README.md) for detailed usage and troubleshooting.
+
+## Infrastructure Deployment
+
+Terraform-managed GCP resources:
+- **Multi-project architecture**: Separate CICD, Staging, Production projects
+- **For development**: All projects point to single dev project
+- **Resources**: Service accounts, buckets (logs, RAG pipeline, load tests), IAM bindings, Vertex AI datastores
+- **Modules**: Unified buckets, Discovery Engine, IAM, enabled services
+
+Deployment paths:
+1. **Automated** (recommended): `uvx agent-starter-pack setup-cicd` - Sets up entire CI/CD pipeline
+2. **Manual**: `make setup-dev-env` - Applies Terraform with dev.tfvars
+3. **Production**: Configure `vars/prod.tfvars` and apply via CI/CD
+
+See [deployment/README.md](deployment/README.md) for Terraform structure and manual deployment steps.
 
 ## Monitoring and Observability
-> You can use [this Looker Studio dashboard](https://lookerstudio.google.com/reporting/46b35167-b38b-4e44-bd37-701ef4307418/page/tEnnC
-) template for visualizing events being logged in BigQuery. See the "Setup Instructions" tab to getting started.
 
-The application uses OpenTelemetry for comprehensive observability with all events being sent to Google Cloud Trace and Logging for monitoring and to BigQuery for long term storage.
+Comprehensive observability with OpenTelemetry:
+- **Tracing**: Google Cloud Trace for request flows
+- **Logging**: Cloud Logging for application logs
+- **Metrics**: BigQuery for long-term storage of telemetry
+- **Dashboard**: [Looker Studio template](https://lookerstudio.google.com/reporting/46b35167-b38b-4e44-bd37-701ef4307418/page/tEnnC) for visualising events
+
+Log sinks:
+- Feedback logs exported to `{project}_feedback` BigQuery dataset
+- Telemetry logs exported to `{project}_telemetry` BigQuery dataset
+
+## Project Conventions
+
+- **Package manager**: uv (not pip/poetry)
+- **Python version**: 3.12
+- **Code style**: ruff (line length 88, isort for imports)
+- **Type checking**: mypy (strict mode)
+- **Testing**: pytest (unit + integration)
+- **Infrastructure**: Terraform (module-based architecture)
+- **CI/CD**: GitHub Actions (lint, test, deploy)
+
+## Troubleshooting
+
+### Agent not retrieving documents
+- Verify datastore exists: Check Vertex AI Search console
+- Check embeddings: Ensure `DATA_STORE_ID` and `DATA_STORE_REGION` env vars are set
+- Wait for indexing: Initial ingestion may take 5-10 minutes
+
+### Frontend connection errors
+- Verify API is running: `curl http://localhost:8000/health`
+- Check environment variables: `frontend/.env.local` should have correct `NEXT_PUBLIC_AGENT_API_URL`
+- Review CORS settings: `app/api.py` CORS middleware
+
+### Terraform errors
+- Run `terraform init` after module changes
+- Validate configuration: `terraform validate`
+- Check project permissions: Service account needs Editor role
+
+### Pipeline failures
+- Check Vertex AI Pipelines console for detailed logs
+- Verify service account permissions: `{project}-knowsee-rag@{project}.iam.gserviceaccount.com`
+- Ensure GCS bucket exists and is accessible
+
+## Additional Resources
+
+- **Component Documentation**:
+  - [Frontend README](frontend/README.md) - UI architecture and component contracts
+  - [Data Ingestion README](data_ingestion/README.md) - Pipeline setup and usage
+  - [Deployment README](deployment/README.md) - Infrastructure and Terraform
+- **Agent Starter Pack**: [Documentation](https://googlecloudplatform.github.io/agent-starter-pack/)
+- **Google ADK**: [GitHub](https://github.com/google/adk-python)
+- **CopilotKit**: [Documentation](https://docs.copilotkit.ai)
+- **Vertex AI Search**: [Documentation](https://cloud.google.com/generative-ai-app-builder/docs/enterprise-search-introduction)
+
+## Licence
+
+Copyright 2025 Google LLC. Licensed under Apache 2.0.
