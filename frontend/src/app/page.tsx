@@ -15,7 +15,6 @@ import {
   LoadingIndicator,
 } from "@/components/message"
 import { Composer } from "@/components/composer"
-import { SidebarProvider } from "@/components/ui/sidebar"
 
 export default function KnowseeChatPage() {
   const [inputValue, setInputValue] = React.useState("")
@@ -53,10 +52,9 @@ export default function KnowseeChatPage() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
-        <AppSidebar />
-        <AppShell>
+    <div className="flex h-screen w-full overflow-hidden">
+      <AppSidebar />
+      <AppShell>
           <div className="flex flex-col h-full">
             {/* Chat Container */}
             <ChatContainer.Root className="flex-1">
@@ -75,32 +73,36 @@ export default function KnowseeChatPage() {
                   </div>
                 ) : (
                   <>
-                    {visibleMessages.map((message) => {
-                      const role = (message as any).role as "user" | "assistant"
-                      const content = (message as any).content as string
-
-                      return (
-                        <MessageBubble
-                          key={message.id}
-                          role={role}
-                        >
-                          <MessageAvatar role={role} />
-                          <div className="flex-1 space-y-2">
-                            <MessageContent markdown={true}>
-                              {content}
-                            </MessageContent>
-                            <MessageActions
-                              content={content}
-                              onRegenerate={
-                                role === "assistant"
-                                  ? () => handleRegenerate(message.id)
-                                  : undefined
-                              }
-                            />
-                          </div>
-                        </MessageBubble>
+                    {visibleMessages
+                      .filter((message): message is TextMessage =>
+                        message instanceof TextMessage && message.role !== MessageRole.System
                       )
-                    })}
+                      .map((message) => {
+                        const role = message.role === MessageRole.User ? "user" : "assistant"
+                        const content = message.content
+
+                        return (
+                          <MessageBubble
+                            key={message.id}
+                            role={role}
+                          >
+                            <MessageAvatar role={role} />
+                            <div className="flex-1 space-y-2">
+                              <MessageContent markdown={true}>
+                                {content}
+                              </MessageContent>
+                              <MessageActions
+                                content={content}
+                                onRegenerate={
+                                  role === "assistant"
+                                    ? () => handleRegenerate(message.id)
+                                    : undefined
+                                }
+                              />
+                            </div>
+                          </MessageBubble>
+                        )
+                      })}
 
                     {isLoading && (
                       <MessageBubble role="assistant">
@@ -127,7 +129,6 @@ export default function KnowseeChatPage() {
             />
           </div>
         </AppShell>
-      </div>
-    </SidebarProvider>
+    </div>
   )
 }
