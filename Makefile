@@ -81,9 +81,9 @@ backend:
 # ==============================================================================
 
 # Set up development environment resources using Terraform
+# NOTE: Configure deployment/terraform/vars/dev.tfvars with your project ID first
 setup-dev-env:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	(cd deployment/terraform && terraform init && terraform apply --var-file vars/dev.tfvars --var dev_project_id=$$PROJECT_ID --auto-approve)
+	cd deployment/terraform && terraform init && terraform apply --var-file vars/dev.tfvars --auto-approve
 
 # ==============================================================================
 # Data Ingestion (RAG capabilities)
