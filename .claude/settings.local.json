@@ -19,7 +19,8 @@
       "Bash(npm init:*)",
       "Bash(python -m pip:*)",
       "Bash(npx shadcn@latest init:*)",
-      "Bash(npx shadcn@latest add button input textarea dropdown-menu tooltip avatar scroll-area separator sidebar)"
+      "Bash(npx shadcn@latest add button input textarea dropdown-menu tooltip avatar scroll-area separator sidebar)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": []
