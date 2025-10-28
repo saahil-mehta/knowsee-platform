@@ -12,33 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: These bucket definitions cannot use the cloud_storage/buckets module because
-# the module doesn't support uniform_bucket_level_access and has force_destroy=false hardcoded.
-# These will remain as direct resources in main.tf until the module is enhanced.
-
 locals {
+  # Internal locals for project IDs
+  deploy_project_ids = {
+    staging = var.staging_project_id
+    prod    = var.prod_project_id
+  }
+
+  all_project_ids = [
+    var.cicd_runner_project_id,
+    var.staging_project_id,
+    var.prod_project_id
+  ]
+
   # Load test results bucket (CICD project)
   bucket_load_test_results = {
     name                        = "${var.cicd_runner_project_id}-${var.project_name}-load-test"
     location                    = var.region
     project                     = var.cicd_runner_project_id
+    storage_class               = "STANDARD"
     uniform_bucket_level_access = true
     force_destroy               = true
+    versioning_enabled          = false
     labels                      = {}
+    lifecycle_rules             = []
   }
 
   # Logs buckets (one per project: cicd, staging, prod)
-  logs_data_buckets = {
-    for project_id in local.all_project_ids :
-    project_id => {
-      name                        = "${project_id}-${var.project_name}-logs"
-      location                    = var.region
-      project                     = project_id
-      uniform_bucket_level_access = true
-      force_destroy               = true
-      labels                      = {}
+  logs_data_buckets = merge(
+    {
+      cicd = {
+        name                        = "${var.cicd_runner_project_id}-${var.project_name}-logs"
+        location                    = var.region
+        project                     = var.cicd_runner_project_id
+        storage_class               = "STANDARD"
+        uniform_bucket_level_access = true
+        force_destroy               = true
+        versioning_enabled          = false
+        labels                      = {}
+        lifecycle_rules             = []
+      }
+    },
+    {
+      for env, project_id in local.deploy_project_ids :
+      env => {
+        name                        = "${project_id}-${var.project_name}-logs"
+        location                    = var.region
+        project                     = project_id
+        storage_class               = "STANDARD"
+        uniform_bucket_level_access = true
+        force_destroy               = true
+        versioning_enabled          = false
+        labels                      = {}
+        lifecycle_rules             = []
+      }
     }
-  }
+  )
 
   # Data ingestion pipeline GCS roots (one per deploy project: staging, prod)
   data_ingestion_pipeline_gcs_roots = {
@@ -47,9 +76,12 @@ locals {
       name                        = "${project_id}-${var.project_name}-rag"
       location                    = var.region
       project                     = project_id
+      storage_class               = "STANDARD"
       uniform_bucket_level_access = true
       force_destroy               = true
+      versioning_enabled          = false
       labels                      = {}
+      lifecycle_rules             = []
     }
   }
 }

@@ -13,13 +13,19 @@
 # limitations under the License.
 
 locals {
+  # Internal locals for project IDs
+  deploy_project_ids = {
+    staging = var.staging_project_id
+    prod    = var.prod_project_id
+  }
+
   # Enabled services per project
   project_enabled_services = merge(
     # CICD project services
     {
       cicd = {
         project_id       = var.cicd_runner_project_id
-        enabled_services = local.cicd_services
+        enabled_services = var.cicd_services
       }
     },
     # Deploy project services (staging, prod)
@@ -27,7 +33,7 @@ locals {
       for env, project_id in local.deploy_project_ids :
       env => {
         project_id       = project_id
-        enabled_services = local.deploy_project_services
+        enabled_services = var.deploy_project_services
       }
     }
   )
