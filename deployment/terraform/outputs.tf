@@ -12,28 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file contains terraform outputs for the knowsee infrastructure.
-# Add outputs here as needed for use by other systems or for documentation.
+# ============================================================================
+# MODULE OUTPUTS
+# ============================================================================
+# These outputs are exposed when this directory is used as a module by
+# environment-specific configurations in environments/{dev,staging,prod}/
+# ============================================================================
 
-# Example outputs (uncomment and customize as needed):
+output "service_accounts" {
+  description = "Service accounts created by the infrastructure"
+  value       = module.service_accounts
+}
 
-# output "service_account_emails" {
-#   description = "Emails of created service accounts"
-#   value = {
-#     for key, sa in module.service_accounts :
-#     key => sa.email
-#   }
-# }
+output "buckets" {
+  description = "Storage buckets created by the infrastructure"
+  value       = module.storage_buckets
+}
 
-# output "bucket_names" {
-#   description = "Names of created storage buckets"
-#   value       = module.storage_buckets.bucket_names
-# }
-
-# output "data_store_ids" {
-#   description = "Discovery Engine data store IDs"
-#   value = {
-#     staging = module.discovery_engine_data_store_staging.data_store_ids
-#     prod    = module.discovery_engine_data_store_prod.data_store_ids
-#   }
-# }
+output "discovery_engine_datastores" {
+  description = "Discovery Engine datastores created"
+  value = {
+    staging = try(module.discovery_engine_data_store_staging[*], [])
+    prod    = try(module.discovery_engine_data_store_prod[*], [])
+  }
+}
