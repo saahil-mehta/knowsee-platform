@@ -206,6 +206,12 @@ tests/load_test/.results/*.html
 tests/load_test/.results/*.csv
 locust_env
 my_env.tfvars
+# Environment-specific tfvars files (keep .example files and dev terraform.tfvars in git)
+deployment/terraform/environments/prod/terraform.tfvars
+deployment/terraform/environments/staging/terraform.tfvars
+deployment/terraform/vars/*.tfvars.backup
+deployment/terraform/vars/*.tfvars
+!deployment/terraform/vars/*.tfvars.example
 .streamlit_chats
 .saved_chats
 .env
