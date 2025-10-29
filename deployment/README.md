@@ -54,17 +54,33 @@ The terraform configuration supports a multi-project architecture for production
 
 ```
 terraform/
-├── main.tf                      # Root configuration with module calls
-├── providers.tf                 # Provider configuration with aliases
-├── variables.tf                 # Input variables
+├── environments/                # Environment-specific configurations
+│   ├── dev/
+│   │   ├── backend.tf          # GCS backend config (state isolation)
+│   │   ├── providers.tf        # Provider configuration
+│   │   ├── variables.tf        # Variable definitions
+│   │   ├── terraform.tfvars    # Development values (in git)
+│   │   └── main.tf             # References parent module
+│   ├── staging/
+│   │   ├── backend.tf          # GCS backend config (state isolation)
+│   │   ├── providers.tf        # Provider configuration
+│   │   ├── variables.tf        # Variable definitions
+│   │   ├── terraform.tfvars.example  # Template (copy to terraform.tfvars)
+│   │   └── main.tf             # References parent module
+│   └── prod/
+│       ├── backend.tf          # GCS backend config (state isolation)
+│       ├── providers.tf        # Provider configuration
+│       ├── variables.tf        # Variable definitions
+│       ├── terraform.tfvars.example  # Template (copy to terraform.tfvars)
+│       └── main.tf             # References parent module
+├── main.tf                      # Root module (referenced by environments)
+├── providers.tf                 # Base provider configuration
+├── variables.tf                 # Input variable definitions
 ├── locals.tf                    # Computed locals (project lists, services)
-├── outputs.tf                   # Output values
+├── outputs.tf                   # Module outputs
 ├── github.tf                    # GitHub Actions variables and secrets
 ├── wif.tf                       # Workload Identity Federation
 ├── log_sinks.tf                 # BigQuery log exports
-├── vars/
-│   ├── dev.tfvars              # Development environment values
-│   └── prod.tfvars.example     # Production template
 ├── modules/                     # Reusable terraform modules
 │   ├── cloud_storage/
 │   │   └── buckets/            # Unified buckets module (versioning, lifecycle)
@@ -137,7 +153,7 @@ Automatically configured variables and secrets:
 
 ### Development Environment
 
-Edit `vars/dev.tfvars`:
+Edit `environments/dev/terraform.tfvars`:
 
 ```hcl
 project_name = "knowsee"
@@ -159,9 +175,16 @@ data_store_region = "eu"
 create_repository = false
 ```
 
-### Production Environment
+### Staging Environment
 
-For production, use separate projects:
+For staging, create `environments/staging/terraform.tfvars` from the template:
+
+```bash
+cp environments/staging/terraform.tfvars.example environments/staging/terraform.tfvars
+vim environments/staging/terraform.tfvars
+```
+
+Then configure with staging-specific values:
 
 ```hcl
 project_name = "knowsee"
@@ -179,6 +202,36 @@ pipeline_cron_schedule = "0 0 * * 0"  # Weekly
 
 create_repository = false
 ```
+
+### Production Environment
+
+For production, create `environments/prod/terraform.tfvars` from the template:
+
+```bash
+cp environments/prod/terraform.tfvars.example environments/prod/terraform.tfvars
+vim environments/prod/terraform.tfvars
+```
+
+Then configure with production-specific values:
+
+```hcl
+project_name = "knowsee"
+
+prod_project_id        = "knowsee-prod-abc123"
+staging_project_id     = "knowsee-staging-abc123"
+cicd_runner_project_id = "knowsee-cicd-abc123"
+
+repository_owner = "your-org"
+repository_name  = "knowsee"
+
+region                 = "europe-west2"
+data_store_region      = "eu"
+pipeline_cron_schedule = "0 0 * * 0"  # Weekly
+
+create_repository = false
+```
+
+**Important**: Never commit `environments/prod/terraform.tfvars` or `environments/staging/terraform.tfvars` with real values. They are automatically excluded by `.gitignore`.
 
 ## Deployment
 
@@ -198,44 +251,80 @@ This command:
 
 ### Manual Deployment
 
-#### 1. Initialise Terraform
+#### 1. Configure Backend (Optional but Recommended)
+
+For production environments, configure GCS backend for state management:
 
 ```bash
-cd deployment/terraform
+# Create GCS bucket for terraform state
+gsutil mb -p your-prod-project-id gs://your-prod-project-id-terraform-state
+
+# Enable versioning
+gsutil versioning set on gs://your-prod-project-id-terraform-state
+
+# Edit environments/prod/backend.tf and uncomment the backend block
+vim deployment/terraform/environments/prod/backend.tf
+```
+
+#### 2. Initialise Terraform
+
+```bash
+# For development
+cd deployment/terraform/environments/dev
+terraform init
+
+# For production
+cd deployment/terraform/environments/prod
 terraform init
 ```
 
-#### 2. Validate Configuration
+#### 3. Validate Configuration
 
 ```bash
 terraform validate
 terraform fmt -recursive
 ```
 
-#### 3. Plan Changes
+#### 4. Plan Changes
 
 ```bash
 # Development
-terraform plan --var-file vars/dev.tfvars
+cd deployment/terraform/environments/dev
+terraform plan
+
+# Staging
+cd deployment/terraform/environments/staging
+terraform plan
 
 # Production
-terraform plan --var-file vars/prod.tfvars
+cd deployment/terraform/environments/prod
+terraform plan
 ```
 
-#### 4. Apply Infrastructure
+#### 5. Apply Infrastructure
 
 ```bash
-# Development (no approval required)
-make setup-dev-env
+# From project root using Makefile (recommended):
 
-# Production (requires confirmation)
-terraform apply --var-file vars/prod.tfvars
+# Development
+make setup-env              # Uses ENV=dev by default
+
+# Staging
+make setup-env ENV=staging
+
+# Production
+make setup-env ENV=prod
+
+# Or directly with terraform:
+cd deployment/terraform/environments/prod
+terraform apply
 ```
 
-#### 5. Verify Deployment
+#### 6. Verify Deployment
 
 ```bash
 # Check outputs
+cd deployment/terraform/environments/dev
 terraform output
 
 # Verify resources in GCP console
@@ -372,31 +461,47 @@ Bucket names are globally unique. If deployment fails with "bucket already exist
 
 ### State Management
 
-- Use remote backends (GCS) for production:
+State files are automatically isolated by environment through the `environments/` directory structure. Each environment has its own `backend.tf` configuration:
 
-```hcl
-terraform {
-  backend "gcs" {
-    bucket = "knowsee-terraform-state"
-    prefix = "prod"
-  }
-}
+- **Development**: Can use local state (default) for simplicity
+- **Staging/Production**: Should use GCS backend (commented in `backend.tf`)
+
+To enable GCS backend for production:
+
+```bash
+# 1. Create state bucket
+gsutil mb -p your-prod-project-id gs://your-prod-project-id-terraform-state
+gsutil versioning set on gs://your-prod-project-id-terraform-state
+
+# 2. Uncomment backend block in environments/prod/backend.tf
+# 3. Update bucket name in backend.tf
+# 4. Initialize with backend
+cd deployment/terraform/environments/prod
+terraform init
 ```
 
-- Lock state file to prevent concurrent modifications
-- Use separate state files per environment
+Benefits:
+- **Automatic isolation**: Each environment has separate state (terraform/knowsee/dev, terraform/knowsee/staging, terraform/knowsee/prod)
+- **State locking**: GCS provides automatic state locking
+- **Team collaboration**: Remote state accessible to authorised team members
+- **Disaster recovery**: Versioned state backups in GCS
 
 ### Variable Management
 
-- Never commit `vars/prod.tfvars` with real values
-- Use environment variables for sensitive values:
+- **Development**: `environments/dev/terraform.tfvars` is tracked in git (with placeholder values)
+- **Staging/Production**: `environments/{staging,prod}/terraform.tfvars` are excluded by `.gitignore`
+- Never commit production/staging tfvars with real values
+- Use `.tfvars.example` files as templates
+
+For sensitive values, use environment variables:
 
 ```bash
 export TF_VAR_repository_owner="your-org"
-terraform apply --var-file vars/prod.tfvars
+cd deployment/terraform/environments/prod
+terraform apply
 ```
 
-- Consider using Google Secret Manager for secrets
+- Consider using Google Secret Manager for highly sensitive secrets
 
 ### Module Versioning
 
@@ -409,8 +514,15 @@ terraform apply --var-file vars/prod.tfvars
 Regularly check for drift between terraform and actual state:
 
 ```bash
-terraform plan --var-file vars/prod.tfvars
+# From project root
+make setup-env ENV=prod  # Will show plan before applying
+
+# Or directly
+cd deployment/terraform/environments/prod
+terraform plan
 ```
+
+Set up automated drift detection in CI/CD by running `terraform plan` on a schedule.
 
 ## Additional Resources
 
