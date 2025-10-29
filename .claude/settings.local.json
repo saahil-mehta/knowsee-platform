@@ -23,7 +23,12 @@
       "WebFetch(domain:api.github.com)",
       "Bash(terraform fmt:*)",
       "Bash(terraform validate:*)",
-      "Bash(terraform init:*)"
+      "Bash(terraform init:*)",
+      "Read(./deployment/terraform/environments/**)",
+      "mcp__github__pull_request_read",
+      "mcp__github__update_pull_request",
+      "mcp__github__add_issue_comment",
+      "mcp__github__get_me"
     ],
     "deny": [],
     "ask": []
