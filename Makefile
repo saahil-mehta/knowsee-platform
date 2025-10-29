@@ -80,25 +80,68 @@ backend:
 # Infrastructure Setup
 # ==============================================================================
 
-# Set up development environment resources using Terraform
-setup-dev-env:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	(cd deployment/terraform/dev && terraform init && terraform apply --var-file vars/env.tfvars --var dev_project_id=$$PROJECT_ID --auto-approve)
+# Environment selection (default: dev)
+# Usage: make setup-env ENV=prod | make data-ingestion ENV=staging
+ENV ?= dev
+
+# Set up environment resources using Terraform
+# NOTE: Configure deployment/terraform/environments/$(ENV)/terraform.tfvars with your project IDs first
+# Examples:
+#   make setup-env              # Deploys dev environment (default)
+#   make setup-env ENV=prod     # Deploys production environment
+#   make setup-env ENV=staging  # Deploys staging environment
+setup-env:
+	@if [ ! -d deployment/terraform/environments/$(ENV) ]; then \
+		echo "Error: deployment/terraform/environments/$(ENV) directory not found"; \
+		echo "Valid environments: dev, staging, prod"; \
+		exit 1; \
+	fi
+	@if [ "$(ENV)" != "dev" ] && [ ! -f deployment/terraform/environments/$(ENV)/terraform.tfvars ]; then \
+		echo "Error: deployment/terraform/environments/$(ENV)/terraform.tfvars not found"; \
+		echo "For production/staging, copy the .example file and configure it:"; \
+		echo "  cp deployment/terraform/environments/$(ENV)/terraform.tfvars.example deployment/terraform/environments/$(ENV)/terraform.tfvars"; \
+		echo "  vim deployment/terraform/environments/$(ENV)/terraform.tfvars  # Edit with your values"; \
+		exit 1; \
+	fi
+	cd deployment/terraform/environments/$(ENV) && terraform init && terraform apply --auto-approve
+
+# Backward compatibility: keep setup-dev-env as alias
+setup-dev-env: ENV=dev
+setup-dev-env: setup-env
 
 # ==============================================================================
 # Data Ingestion (RAG capabilities)
 # ==============================================================================
 
 # Run the data ingestion pipeline for RAG capabilities
+# NOTE: Extracts all configuration from deployment/terraform/environments/$(ENV)/terraform.tfvars
+# Examples:
+#   make data-ingestion              # Runs on dev environment (default)
+#   make data-ingestion ENV=prod     # Runs on production environment
 data-ingestion:
-	PROJECT_ID=$$(gcloud config get-value project) && \
+	@if [ ! -f deployment/terraform/environments/$(ENV)/terraform.tfvars ]; then \
+		echo "Error: deployment/terraform/environments/$(ENV)/terraform.tfvars not found"; \
+		exit 1; \
+	fi
+	PROJECT_ID=$$(grep -E '^prod_project_id' deployment/terraform/environments/$(ENV)/terraform.tfvars | cut -d'"' -f2) && \
+	REGION=$$(grep -E '^region' deployment/terraform/environments/$(ENV)/terraform.tfvars | cut -d'"' -f2) && \
+	DATA_STORE_REGION=$$(grep -E '^data_store_region' deployment/terraform/environments/$(ENV)/terraform.tfvars | cut -d'"' -f2) && \
+	PROJECT_NAME=$$(grep -E '^project_name' deployment/terraform/environments/$(ENV)/terraform.tfvars | cut -d'"' -f2) && \
+	if [ -z "$$PROJECT_ID" ] || [ "$$PROJECT_ID" = "your-dev-project-id" ] || [ "$$PROJECT_ID" = "your-production-project-id" ]; then \
+		echo "Error: Please configure prod_project_id in deployment/terraform/environments/$(ENV)/terraform.tfvars"; \
+		exit 1; \
+	fi && \
+	echo "Running data ingestion for $(ENV) environment:" && \
+	echo "  Project ID: $$PROJECT_ID" && \
+	echo "  Region: $$REGION" && \
+	echo "  Data Store Region: $$DATA_STORE_REGION" && \
 	(cd data_ingestion && uv run data_ingestion_pipeline/submit_pipeline.py \
 		--project-id=$$PROJECT_ID \
-		--region="europe-west2" \
-		--data-store-id="knowsee-datastore" \
-		--data-store-region="eu" \
-		--service-account="knowsee-rag@$$PROJECT_ID.iam.gserviceaccount.com" \
-		--pipeline-root="gs://$$PROJECT_ID-knowsee-rag" \
+		--region="$$REGION" \
+		--data-store-id="$$PROJECT_NAME-datastore" \
+		--data-store-region="$$DATA_STORE_REGION" \
+		--service-account="$$PROJECT_NAME-rag@$$PROJECT_ID.iam.gserviceaccount.com" \
+		--pipeline-root="gs://$$PROJECT_ID-$$PROJECT_NAME-rag" \
 		--pipeline-name="data-ingestion-pipeline")
 
 # ==============================================================================

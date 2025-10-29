@@ -20,7 +20,10 @@
       "Bash(python -m pip:*)",
       "Bash(npx shadcn@latest init:*)",
       "Bash(npx shadcn@latest add button input textarea dropdown-menu tooltip avatar scroll-area separator sidebar)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform init:*)"
     ],
     "deny": [],
     "ask": []
