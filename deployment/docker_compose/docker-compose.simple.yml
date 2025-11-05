@@ -1,0 +1,267 @@
+# Simplified Onyx Docker Compose
+# ONE file for dev, staging, and prod
+# Differences handled via environment variables
+
+version: '3.8'
+
+name: onyx-simple
+
+services:
+  # ============================================================================
+  # Core Application Services
+  # ============================================================================
+
+  api:
+    image: ${DOCKER_REGISTRY:-onyxdotapp}/onyx-backend:${IMAGE_TAG:-latest}
+    container_name: onyx-api
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    command: >
+      /bin/sh -c "
+      alembic upgrade head &&
+      echo 'Starting Onyx API Server' &&
+      uvicorn onyx.main:app --host 0.0.0.0 --port 8080"
+    depends_on:
+      - postgres
+      - redis
+      - vespa
+      - minio
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      # Core settings
+      - ENV=${ENV:-development}
+      - AUTH_TYPE=${AUTH_TYPE:-disabled}
+      - WEB_DOMAIN=${WEB_DOMAIN:-http://localhost:3000}
+      - ENCRYPTION_KEY_SECRET=${ENCRYPTION_KEY_SECRET:-changeme-in-production}
+
+      # Database
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-onyx}
+
+      # Services
+      - VESPA_HOST=vespa
+      - REDIS_HOST=redis
+      - MODEL_SERVER_HOST=${MODEL_SERVER_HOST:-}
+
+      # Storage
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_AWS_ACCESS_KEY_ID=${S3_AWS_ACCESS_KEY_ID:-minioadmin}
+      - S3_AWS_SECRET_ACCESS_KEY=${S3_AWS_SECRET_ACCESS_KEY:-minioadmin}
+
+      # OAuth connectors
+      - OAUTH_GOOGLE_DRIVE_CLIENT_ID=${OAUTH_GOOGLE_DRIVE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_DRIVE_CLIENT_SECRET=${OAUTH_GOOGLE_DRIVE_CLIENT_SECRET:-}
+      - LINEAR_CLIENT_ID=${LINEAR_CLIENT_ID:-}
+      - LINEAR_CLIENT_SECRET=${LINEAR_CLIENT_SECRET:-}
+
+      # LLM
+      - GEN_AI_API_KEY=${GEN_AI_API_KEY:-}
+
+      # Features
+      - ENABLE_PAID_ENTERPRISE_EDITION_FEATURES=${ENABLE_PAID_ENTERPRISE_EDITION_FEATURES:-false}
+      - DISABLE_MODEL_SERVER=${DISABLE_MODEL_SERVER:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - api_logs:/var/log/onyx
+    networks:
+      - onyx
+
+  # ============================================================================
+  # Background Worker (Lightweight mode - ONE worker for everything)
+  # ============================================================================
+
+  worker:
+    image: ${DOCKER_REGISTRY:-onyxdotapp}/onyx-backend:${IMAGE_TAG:-latest}
+    container_name: onyx-worker
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    command: /app/scripts/supervisord_entrypoint.sh
+    depends_on:
+      - postgres
+      - redis
+      - vespa
+    restart: unless-stopped
+    environment:
+      # Force lightweight mode (ONE worker instead of 9)
+      - USE_LIGHTWEIGHT_BACKGROUND_WORKER=true
+
+      # Core settings
+      - ENV=${ENV:-development}
+      - AUTH_TYPE=${AUTH_TYPE:-disabled}
+
+      # Database
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-onyx}
+
+      # Services
+      - VESPA_HOST=vespa
+      - REDIS_HOST=redis
+      - MODEL_SERVER_HOST=${MODEL_SERVER_HOST:-}
+
+      # Storage
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_AWS_ACCESS_KEY_ID=${S3_AWS_ACCESS_KEY_ID:-minioadmin}
+      - S3_AWS_SECRET_ACCESS_KEY=${S3_AWS_SECRET_ACCESS_KEY:-minioadmin}
+
+      # OAuth connectors
+      - OAUTH_GOOGLE_DRIVE_CLIENT_ID=${OAUTH_GOOGLE_DRIVE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_DRIVE_CLIENT_SECRET=${OAUTH_GOOGLE_DRIVE_CLIENT_SECRET:-}
+
+      # LLM
+      - GEN_AI_API_KEY=${GEN_AI_API_KEY:-}
+
+      # Features
+      - DISABLE_MODEL_SERVER=${DISABLE_MODEL_SERVER:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - worker_logs:/var/log/onyx
+    networks:
+      - onyx
+
+  # ============================================================================
+  # Frontend
+  # ============================================================================
+
+  web:
+    image: ${DOCKER_REGISTRY:-onyxdotapp}/onyx-web-server:${IMAGE_TAG:-latest}
+    container_name: onyx-web
+    build:
+      context: ../../web
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      - INTERNAL_URL=http://api:8080
+      - NEXT_PUBLIC_DISABLE_LOGOUT=${NEXT_PUBLIC_DISABLE_LOGOUT:-}
+      - NEXT_PUBLIC_THEME=${NEXT_PUBLIC_THEME:-}
+    env_file:
+      - path: .env
+        required: false
+    networks:
+      - onyx
+
+  # ============================================================================
+  # Data Storage
+  # ============================================================================
+
+  postgres:
+    image: postgres:15.2-alpine
+    container_name: onyx-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-onyx}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - onyx
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: onyx-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - onyx
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Vector Search
+  # ============================================================================
+
+  vespa:
+    image: vespaengine/vespa:8.526.15
+    container_name: onyx-vespa
+    restart: unless-stopped
+    ports:
+      - "${VESPA_PORT:-19071}:19071"
+      - "${VESPA_CONFIG_PORT:-8081}:8081"
+    environment:
+      - VESPA_SKIP_UPGRADE_CHECK=true
+    volumes:
+      - vespa_data:/opt/vespa/var
+    networks:
+      - onyx
+
+  # ============================================================================
+  # Object Storage
+  # ============================================================================
+
+  minio:
+    image: minio/minio:latest
+    container_name: onyx-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      - MINIO_ROOT_USER=${S3_AWS_ACCESS_KEY_ID:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${S3_AWS_SECRET_ACCESS_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    networks:
+      - onyx
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+# ============================================================================
+# Volumes
+# ============================================================================
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  vespa_data:
+    driver: local
+  minio_data:
+    driver: local
+  api_logs:
+    driver: local
+  worker_logs:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+
+networks:
+  onyx:
+    driver: bridge
