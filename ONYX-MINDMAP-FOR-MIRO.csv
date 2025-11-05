@@ -1,0 +1,300 @@
+Topic,Parent Topic,Description,Type
+ONYX Enterprise AI Search,,,Root
+AUTH & ACCESS,ONYX Enterprise AI Search,,Branch
+Authentication,AUTH & ACCESS,,Category
+JWT Tokens,Authentication,,Subcategory
+generate_jwt_token,JWT Tokens,backend/onyx/auth/jwt.py,Function
+verify_jwt_token,JWT Tokens,backend/onyx/auth/jwt.py,Function
+OAuth2,Authentication,,Subcategory
+oauth_authorization_url,OAuth2,backend/onyx/server/documents/standard_oauth.py,Function
+oauth_code_to_token,OAuth2,backend/onyx/server/documents/standard_oauth.py,Function
+OAuthConnector interface,OAuth2,backend/onyx/connectors/interfaces.py,Interface
+SAML SSO (EE),Authentication,,Subcategory
+saml_auth_flow,SAML SSO (EE),ee/onyx/auth/saml.py,Function
+saml_metadata_handler,SAML SSO (EE),ee/onyx/auth/saml.py,Function
+API Keys,Authentication,,Subcategory
+create_api_key,API Keys,backend/onyx/db/api_key.py,Function
+validate_api_key,API Keys,backend/onyx/auth/api_key.py,Function
+FastAPI-Users,Authentication,,Subcategory
+UserManager,FastAPI-Users,backend/onyx/auth/users.py,Class
+get_user_db,FastAPI-Users,backend/onyx/db/engine.py,Function
+current_user dependency,FastAPI-Users,backend/onyx/auth/users.py,Dependency
+Authorization,AUTH & ACCESS,,Category
+Access Control,Authorization,,Subcategory
+_get_access_for_documents,Access Control,backend/onyx/db/document.py,Function
+_get_acl_for_user,Access Control,backend/onyx/db/document.py,Function
+check_user_access,Access Control,backend/onyx/access/access.py,Function
+User Roles,Authorization,,Subcategory
+ADMIN,User Roles,backend/onyx/db/models.py,Enum
+CURATOR,User Roles,backend/onyx/db/models.py,Enum
+BASIC,User Roles,backend/onyx/db/models.py,Enum
+GLOBAL_CURATOR,User Roles,backend/onyx/db/models.py,Enum
+Document Permissions,Authorization,,Subcategory
+DocumentAccess model,Document Permissions,backend/onyx/db/models.py,Model
+ExternalAccess model,Document Permissions,ee/onyx/db/models.py,Model
+ACL filtering,Document Permissions,backend/onyx/document_index/vespa/index.py,Feature
+User Groups (EE),Authorization,,Subcategory
+UserGroup model,User Groups (EE),ee/onyx/db/models.py,Model
+User__UserGroup mapping,User Groups (EE),ee/onyx/db/models.py,Model
+Group-based access,User Groups (EE),ee/onyx/access/access.py,Feature
+Curator privileges,User Groups (EE),ee/onyx/access/access.py,Feature
+External Permissions (EE),Authorization,,Subcategory
+confluence_doc_sync,External Permissions (EE),ee/onyx/connectors/confluence/permissions.py,Function
+gdrive_doc_sync,External Permissions (EE),ee/onyx/connectors/google_drive/permissions.py,Function
+jira_doc_sync,External Permissions (EE),ee/onyx/connectors/jira/permissions.py,Function
+CONNECTORS (50+),ONYX Enterprise AI Search,,Branch
+Connector Framework,CONNECTORS (50+),,Category
+BaseConnector,Connector Framework,backend/onyx/connectors/interfaces.py,Interface
+LoadConnector,Connector Framework,backend/onyx/connectors/interfaces.py,Interface
+PollConnector,Connector Framework,backend/onyx/connectors/interfaces.py,Interface
+OAuthConnector,Connector Framework,backend/onyx/connectors/interfaces.py,Interface
+identify_connector_class,Connector Framework,backend/onyx/connectors/factory.py,Function
+instantiate_connector,Connector Framework,backend/onyx/connectors/factory.py,Function
+Document Management,CONNECTORS (50+),,Category
+Google Drive,Document Management,backend/onyx/connectors/google_drive,Connector
+SharePoint,Document Management,backend/onyx/connectors/sharepoint,Connector
+Confluence,Document Management,backend/onyx/connectors/confluence,Connector
+Notion,Document Management,backend/onyx/connectors/notion,Connector
+Guru,Document Management,backend/onyx/connectors/guru,Connector
+Slab,Document Management,backend/onyx/connectors/slab,Connector
+Bookstack,Document Management,backend/onyx/connectors/bookstack,Connector
+Cloud Storage,CONNECTORS (50+),,Category
+Google Cloud Storage,Cloud Storage,backend/onyx/connectors/gcs,Connector
+S3,Cloud Storage,backend/onyx/connectors/s3,Connector
+R2,Cloud Storage,backend/onyx/connectors/r2,Connector
+Communication,CONNECTORS (50+),,Category
+Slack,Communication,backend/onyx/connectors/slack,Connector
+Gmail,Communication,backend/onyx/connectors/gmail,Connector
+Outlook,Communication,backend/onyx/connectors/outlook,Connector
+Discord,Communication,backend/onyx/connectors/discord,Connector
+Code Repositories,CONNECTORS (50+),,Category
+GitHub,Code Repositories,backend/onyx/connectors/github,Connector
+GitLab,Code Repositories,backend/onyx/connectors/gitlab,Connector
+Bitbucket,Code Repositories,backend/onyx/connectors/bitbucket,Connector
+Ticketing & Project,CONNECTORS (50+),,Category
+Jira,Ticketing & Project,backend/onyx/connectors/jira,Connector
+Linear,Ticketing & Project,backend/onyx/connectors/linear,Connector
+Asana,Ticketing & Project,backend/onyx/connectors/asana,Connector
+CRM & Sales,CONNECTORS (50+),,Category
+HubSpot,CRM & Sales,backend/onyx/connectors/hubspot,Connector
+Salesforce,CRM & Sales,backend/onyx/connectors/salesforce,Connector
+Zendesk,CRM & Sales,backend/onyx/connectors/zendesk,Connector
+DLT Integration (NEW),CONNECTORS (50+),,Category
+DltGenericConnector,DLT Integration (NEW),backend/onyx/connectors/dlt_generic/connector.py,Connector
+Google Ads,DLT Integration (NEW),Marketing data via dlthub,Source
+Facebook Ads,DLT Integration (NEW),Marketing data via dlthub,Source
+LinkedIn Ads,DLT Integration (NEW),Marketing data via dlthub,Source
+DOCUMENT PROCESSING,ONYX Enterprise AI Search,,Branch
+Indexing Pipeline,DOCUMENT PROCESSING,,Category
+ConnectorRunner,Indexing Pipeline,backend/onyx/background/connector_runner.py,Class
+BatchIndexingRunner,Indexing Pipeline,backend/onyx/indexing/batch_indexing.py,Class
+Chunking,DOCUMENT PROCESSING,,Category
+Chunker,Chunking,backend/onyx/chunking/chunk.py,Class
+chunk_document,Chunking,backend/onyx/chunking/chunk.py,Function
+Strategies,Chunking,By paragraph/sentence/character with overlap,Feature
+Embedding,DOCUMENT PROCESSING,,Category
+DefaultIndexingEmbedder,Embedding,backend/onyx/indexing/embedder.py,Class
+embed_chunks,Embedding,backend/onyx/indexing/embedder.py,Function
+text-embedding-3-small,Embedding,OpenAI embedding model,Model
+voyage-context-3,Embedding,Voyage AI embedding model,Model
+Content Processing,DOCUMENT PROCESSING,,Category
+extract_pdf_text,Content Processing,backend/onyx/file_processing/extract_text.py,Function
+extract_docx_text,Content Processing,backend/onyx/file_processing/extract_text.py,Function
+extract_image_content,Content Processing,backend/onyx/file_processing/image_processing.py,Function
+File Storage,DOCUMENT PROCESSING,,Category
+get_default_file_store,File Storage,backend/onyx/file_store/file_store.py,Function
+S3 MinIO,File Storage,backend/onyx/file_store/s3.py,Implementation
+VECTOR SEARCH (Vespa),ONYX Enterprise AI Search,,Branch
+Document Index,VECTOR SEARCH (Vespa),,Category
+VespaIndex,Document Index,backend/onyx/document_index/vespa/index.py,Class
+index_chunks,Document Index,backend/onyx/document_index/vespa/index.py,Function
+delete_documents,Document Index,backend/onyx/document_index/vespa/index.py,Function
+Search & Retrieval,VECTOR SEARCH (Vespa),,Category
+build_vespa_query,Search & Retrieval,backend/onyx/search/search_runner.py,Function
+Keyword Search (BM25),Search & Retrieval,backend/onyx/search/models.py,Feature
+Semantic Search,Search & Retrieval,Vector similarity via Vespa,Feature
+Hybrid Search (RRF),Search & Retrieval,Reciprocal Rank Fusion,Feature
+Filtering,VECTOR SEARCH (Vespa),,Category
+ACL filtering,Filtering,backend/onyx/document_index/vespa/index.py,Feature
+Time decay,Filtering,backend/onyx/search/search_runner.py,Feature
+Source filtering,Filtering,backend/onyx/search/search_runner.py,Feature
+Knowledge Graph,VECTOR SEARCH (Vespa),,Category
+extract_entities,Knowledge Graph,backend/onyx/knowledge_graph/extraction.py,Function
+build_relationships,Knowledge Graph,backend/onyx/knowledge_graph/graph.py,Function
+CHAT & LLM,ONYX Enterprise AI Search,,Branch
+Chat Pipeline,CHAT & LLM,,Category
+process_message,Chat Pipeline,backend/onyx/chat/process_message.py,Function
+StreamingChatHandler,Chat Pipeline,backend/onyx/chat/stream.py,Class
+build_system_prompt,Chat Pipeline,backend/onyx/chat/prompt_builder.py,Function
+stream_chat_response,Chat Pipeline,backend/onyx/chat/stream.py,Function
+LLM Providers,CHAT & LLM,,Category
+OpenAI,LLM Providers,"gpt-4, gpt-3.5-turbo",Provider
+Anthropic,LLM Providers,"claude-3-opus, claude-3-sonnet",Provider
+Google,LLM Providers,gemini-pro,Provider
+Cohere,LLM Providers,command-r+,Provider
+Azure,LLM Providers,Azure OpenAI,Provider
+LiteLLM,LLM Providers,Universal LLM gateway,Framework
+Context Assembly,CHAT & LLM,,Category
+retrieve_documents,Context Assembly,backend/onyx/search/search_runner.py,Function
+rank_by_relevance,Context Assembly,backend/onyx/search/reranking.py,Function
+extract_citations,Context Assembly,backend/onyx/chat/citations.py,Function
+Tools Framework,CHAT & LLM,,Category
+BaseTool,Tools Framework,backend/onyx/tools/interface.py,Interface
+Search Tool,Tools Framework,backend/onyx/tools/search.py,Tool
+Image Tool,Tools Framework,backend/onyx/tools/image.py,Tool
+Web Search,Tools Framework,backend/onyx/tools/web_search.py,Tool
+MCP Tools,Tools Framework,Model Context Protocol integration,Feature
+Personas/Assistants,CHAT & LLM,,Category
+Persona model,Personas/Assistants,backend/onyx/db/models.py,Model
+create_persona,Personas/Assistants,backend/onyx/db/persona.py,Function
+Private Personas (EE),Personas/Assistants,ee/onyx/db/persona.py,Feature
+BACKGROUND JOBS (Celery),ONYX Enterprise AI Search,,Branch
+Worker Architecture,BACKGROUND JOBS (Celery),,Category
+Unified Worker (Lightweight),Worker Architecture,All tasks in one worker (20 threads),Mode
+Primary Worker (Standard),Worker Architecture,Coordination tasks (4 threads),Mode
+Docfetching Worker,Worker Architecture,Fetch from connectors,Worker
+Docprocessing Worker,Worker Architecture,Index pipeline,Worker
+Light Worker,Worker Architecture,Fast operations,Worker
+Heavy Worker,Worker Architecture,Resource-intensive (4 threads),Worker
+KG Processing Worker,Worker Architecture,Knowledge graph,Worker
+Monitoring Worker,Worker Architecture,Health checks (single thread),Worker
+Beat Scheduler,Worker Architecture,Periodic task scheduling,Worker
+Task Categories,BACKGROUND JOBS (Celery),,Category
+Connector Indexing,Task Categories,run_connector_index,Task
+Document Sync,Task Categories,sync_vespa,Task
+Pruning,Task Categories,prune_documents,Task
+Permission Syncing (EE),Task Categories,sync_doc_permissions / sync_external_groups,Task
+Health Checks,Task Categories,check_celery_queues / check_process_memory,Task
+DATABASE (PostgreSQL),ONYX Enterprise AI Search,,Branch
+Core Models,DATABASE (PostgreSQL),,Category
+User,Core Models,backend/onyx/db/models.py,Model
+Connector,Core Models,backend/onyx/db/models.py,Model
+Credential,Core Models,backend/onyx/db/models.py,Model
+ConnectorCredentialPair,Core Models,backend/onyx/db/models.py,Model
+Document,Core Models,backend/onyx/db/models.py,Model
+ChatSession,Core Models,backend/onyx/db/models.py,Model
+ChatMessage,Core Models,backend/onyx/db/models.py,Model
+Persona,Core Models,backend/onyx/db/models.py,Model
+EE Models,DATABASE (PostgreSQL),,Category
+UserGroup,EE Models,ee/onyx/db/models.py,Model
+ExternalAccess,EE Models,ee/onyx/db/models.py,Model
+StandardAnswer,EE Models,ee/onyx/db/models.py,Model
+TokenRateLimit__UserGroup,EE Models,ee/onyx/db/models.py,Model
+UsageReportMetadata,EE Models,ee/onyx/db/models.py,Model
+Operations,DATABASE (PostgreSQL),,Category
+User CRUD,Operations,backend/onyx/db/user.py,Module
+Connector CRUD,Operations,backend/onyx/db/connector.py,Module
+Document CRUD,Operations,backend/onyx/db/document.py,Module
+Chat CRUD,Operations,backend/onyx/db/chat.py,Module
+Migrations,DATABASE (PostgreSQL),,Category
+Alembic,Migrations,100+ migration files,Tool
+Multi-tenant,Migrations,schema_private for tenant isolation,Feature
+API SERVER (FastAPI),ONYX Enterprise AI Search,,Branch
+Authentication Endpoints,API SERVER (FastAPI),,Category
+/auth/login,Authentication Endpoints,backend/onyx/server/auth.py,Endpoint
+/auth/register,Authentication Endpoints,backend/onyx/server/auth.py,Endpoint
+/auth/verify,Authentication Endpoints,backend/onyx/server/auth.py,Endpoint
+Query & Chat Endpoints,API SERVER (FastAPI),,Category
+/query,Query & Chat Endpoints,backend/onyx/server/query_and_chat/query_backend.py,Endpoint
+/chat/send-message,Query & Chat Endpoints,backend/onyx/server/query_and_chat/chat_backend.py,Endpoint
+/chat/stream,Query & Chat Endpoints,backend/onyx/server/query_and_chat/chat_backend.py,Endpoint
+Document Management Endpoints,API SERVER (FastAPI),,Category
+/manage/admin/connector,Document Management Endpoints,backend/onyx/server/manage/connector.py,Endpoint
+/manage/admin/credential,Document Management Endpoints,backend/onyx/server/manage/credential.py,Endpoint
+/connector/oauth/authorize,Document Management Endpoints,backend/onyx/server/documents/standard_oauth.py,Endpoint
+/connector/oauth/callback,Document Management Endpoints,backend/onyx/server/documents/standard_oauth.py,Endpoint
+Admin Endpoints,API SERVER (FastAPI),,Category
+/manage/admin/user,Admin Endpoints,backend/onyx/server/manage/user.py,Endpoint
+/manage/admin/user-group (EE),Admin Endpoints,ee/onyx/server/manage/user_group.py,Endpoint
+/manage/admin/standard-answer (EE),Admin Endpoints,ee/onyx/server/manage/standard_answer.py,Endpoint
+Analytics Endpoints (EE),API SERVER (FastAPI),,Category
+/admin/analytics/usage,Analytics Endpoints (EE),ee/onyx/server/analytics/usage.py,Endpoint
+/admin/query-history,Analytics Endpoints (EE),ee/onyx/server/analytics/query_history.py,Endpoint
+Middleware,API SERVER (FastAPI),,Category
+JWT verification,Middleware,backend/onyx/auth/jwt.py,Middleware
+Rate limiting,Middleware,backend/onyx/server/middleware/rate_limit.py,Middleware
+Tenant routing (EE),Middleware,ee/onyx/server/middleware/tenant.py,Middleware
+EE FEATURES (Enterprise),ONYX Enterprise AI Search,,Branch
+User Groups,EE FEATURES (Enterprise),,Category
+Group Management,User Groups,create_user_group / add_users_to_group,Feature
+Curator Roles,User Groups,Group-level curator privileges,Feature
+Integration,User Groups,43 files use fetch_versioned_implementation,Pattern
+External Permissions,EE FEATURES (Enterprise),,Category
+Document Sync,External Permissions,"Confluence, Google Drive, Jira, SharePoint, Salesforce, Slack",Feature
+Group Sync,External Permissions,"Google Workspace, Azure AD, External IDP",Feature
+Access Mapping,External Permissions,External ID to Onyx user mapping,Feature
+ACL System,External Permissions,prefix_user_email / prefix_user_group / prefix_external_group,Feature
+Salesforce Censoring,External Permissions,Fine-grained content filtering,Feature
+Analytics & Reporting,EE FEATURES (Enterprise),,Category
+Query History,Analytics & Reporting,ChatSessionSnapshot / Feedback tracking,Feature
+Usage Analytics,Analytics & Reporting,Per-persona stats / Token usage,Feature
+Reporting,Analytics & Reporting,CSV export / Usage reports / Audit logs,Feature
+Dashboards,Analytics & Reporting,Admin analytics / Usage charts,Feature
+Knowledge Management,EE FEATURES (Enterprise),,Category
+Standard Answers,Knowledge Management,FAQ automation with keyword/regex matching,Feature
+Slack Auto-response,Knowledge Management,Automatic answers in Slack,Feature
+Category Organization,Knowledge Management,StandardAnswerCategory hierarchy,Feature
+Resource Management,EE FEATURES (Enterprise),,Category
+Token Rate Limiting,Resource Management,Per-group quotas / TokenRateLimit__UserGroup,Feature
+Usage Tracking,Resource Management,Token counting / Usage aggregation,Feature
+Limit Enforcement,Resource Management,Query pipeline checks / Alerts,Feature
+Multi-Tenancy,EE FEATURES (Enterprise),,Category
+Tenant Isolation,Multi-Tenancy,Schema separation / Per-tenant DB,Feature
+Tenant Routing,Multi-Tenancy,get_tenant_id_for_email / Middleware routing,Feature
+Multi-tenant Scheduler,Multi-Tenancy,DynamicTenantScheduler for Celery Beat,Feature
+Advanced Features,EE FEATURES (Enterprise),,Category
+Feature Flags,Advanced Features,PostHog integration / A/B testing,Feature
+Billing,Advanced Features,Subscription management / Payment integration,Feature
+White-Labeling,Advanced Features,Custom branding / Logo upload / Theme customization,Feature
+FRONTEND (Next.js),ONYX Enterprise AI Search,,Branch
+Public Pages,FRONTEND (Next.js),,Category
+/login,Public Pages,web/src/app/login,Page
+/search,Public Pages,web/src/app/search,Page
+/chat,Public Pages,web/src/app/chat,Page
+Admin Pages,FRONTEND (Next.js),,Category
+/admin/connectors,Admin Pages,web/src/app/admin/connectors,Page
+/admin/indexing,Admin Pages,web/src/app/admin/indexing,Page
+/admin/users,Admin Pages,web/src/app/admin/users,Page
+EE Admin Pages,FRONTEND (Next.js),,Category
+/ee/admin/groups,EE Admin Pages,web/src/app/ee/admin/groups,Page
+/ee/admin/performance,EE Admin Pages,Analytics dashboards / Query history / Usage reports,Page
+/ee/admin/standard-answer,EE Admin Pages,web/src/app/ee/admin/standard-answer,Page
+/ee/admin/billing,EE Admin Pages,web/src/app/ee/admin/billing,Page
+Components,FRONTEND (Next.js),,Category
+ChatWindow,Components,web/src/components/chat,Component
+SearchBar,Components,web/src/components/search,Component
+ConnectorForm,Components,web/src/components/admin/connectors,Component
+UserTable,Components,web/src/components/admin/users,Component
+GroupEditor (EE),Components,web/src/components/ee/admin/groups,Component
+State Management,FRONTEND (Next.js),,Category
+SWR,State Management,Data fetching and caching,Library
+React hooks,State Management,useState / useEffect / Custom hooks,Pattern
+User context,State Management,Global user state,Context
+INFRASTRUCTURE,ONYX Enterprise AI Search,,Branch
+Configuration,INFRASTRUCTURE,,Category
+App Config,Configuration,backend/onyx/configs/app_configs.py,Module
+LLM Config,Configuration,backend/onyx/configs/model_configs.py,Module
+Embedding Config,Configuration,backend/onyx/configs/model_configs.py,Module
+Redis,INFRASTRUCTURE,,Category
+Celery broker,Redis,Task queue messaging,Use Case
+OAuth state,Redis,Temporary OAuth state storage,Use Case
+Caching,Redis,General-purpose caching,Use Case
+Per-tenant namespacing,Redis,Isolation for multi-tenancy,Pattern
+Monitoring,INFRASTRUCTURE,,Category
+Logging,Monitoring,setup_logger / Structured logging,Feature
+Tracing,Monitoring,Request tracing / Span tracking,Feature
+Telemetry,Monitoring,Usage metrics / Error tracking,Feature
+Health Checks,Monitoring,/health endpoint / Service status,Feature
+Utilities,INFRASTRUCTURE,,Category
+NLP,Utilities,Tokenization / Text processing,Module
+Encryption,Utilities,encrypt_string / decrypt_string,Module
+Versioning,Utilities,OnyxVersion / EE detection / fetch_versioned_implementation,Module
+Deployment,INFRASTRUCTURE,,Category
+Docker,Deployment,Backend + Web + Model server Dockerfiles,Container
+Docker Compose,Deployment,10+ compose files / 9-10 services,Orchestration
+Kubernetes,Deployment,Helm charts / Multi-replica,Orchestration
+Testing,INFRASTRUCTURE,,Category
+Unit Tests,Testing,Component isolation,Type
+Integration Tests,Testing,Full stack tests / Connector tests,Type
+Daily Tests,Testing,Connector validation / Permission tests,Type
+Regression Tests,Testing,Search quality / Answer quality,Type
