@@ -6,27 +6,27 @@ mindmap
     🔐 **AUTH & ACCESS**
       Authentication
         JWT Tokens
-          generate_jwt_token()
-          verify_jwt_token()
+          generate_jwt_token
+          verify_jwt_token
         OAuth2
-          oauth_authorization_url()
-          oauth_code_to_token()
+          oauth_authorization_url
+          oauth_code_to_token
           OAuthConnector interface
         SAML SSO EE
-          saml_auth_flow()
-          saml_metadata_handler()
+          saml_auth_flow
+          saml_metadata_handler
         API Keys
-          create_api_key()
-          validate_api_key()
+          create_api_key
+          validate_api_key
         FastAPI-Users
           UserManager
-          get_user_db()
+          get_user_db
           current_user dependency
       Authorization
         Access Control
-          _get_access_for_documents()
-          _get_acl_for_user()
-          check_user_access()
+          _get_access_for_documents
+          _get_acl_for_user
+          check_user_access
         User Roles
           ADMIN
           CURATOR
@@ -43,36 +43,36 @@ mindmap
           Curator privileges
         EE: External Permissions
           Permission Sync
-            confluence_doc_sync()
-            gdrive_doc_sync()
-            jira_doc_sync()
+            confluence_doc_sync
+            gdrive_doc_sync
+            jira_doc_sync
           External Groups
-            _perform_external_group_sync()
+            _perform_external_group_sync
             User__ExternalUserGroupId
             PublicExternalUserGroup
           Salesforce Censoring
-            censor_salesforce_chunks()
+            censor_salesforce_chunks
 
     🔌 **CONNECTORS 50+**
       Framework
         Base Interfaces
           BaseConnector
-            load_credentials()
-            validate_connector_settings()
+            load_credentials
+            validate_connector_settings
           LoadConnector
-            load_from_state()
+            load_from_state
           PollConnector
-            poll_source()
+            poll_source
           CheckpointedConnector
-            retrieve_all_source_docs()
+            retrieve_all_source_docs
           OAuthConnector
-            oauth_id()
-            oauth_authorization_url()
+            oauth_id
+            oauth_authorization_url
           SlimConnector
-            retrieve_all_slim_documents()
+            retrieve_all_slim_documents
         Factory & Registry
-          identify_connector_class()
-          instantiate_connector()
+          identify_connector_class
+          instantiate_connector
           CONNECTOR_CLASS_MAP
         Models
           Document
@@ -209,14 +209,14 @@ mindmap
       Indexing Pipeline
         Document Ingestion
           ConnectorRunner
-            run_connector()
-            _validate_connector()
+            run_connector
+            _validate_connector
           BatchIndexingRunner
         Chunking
           Chunker
-            chunk_document()
-            _split_by_sep()
-            _chunk_large_section()
+            chunk_document
+            _split_by_sep
+            _chunk_large_section
           Strategies
             By paragraph
             By sentence
@@ -224,41 +224,41 @@ mindmap
             With overlap
         Embedding
           DefaultIndexingEmbedder
-            embed_chunks()
-            embed_batch()
+            embed_chunks
+            embed_batch
           Models
             text-embedding-3-small
             voyage-context-3
             Custom models
         Content Processing
           Text Extraction
-            extract_pdf_text()
-            extract_docx_text()
-            extract_file_text()
+            extract_pdf_text
+            extract_docx_text
+            extract_file_text
           Image Processing
-            extract_image_content()
-            get_unstructured_api_key()
+            extract_image_content
+            get_unstructured_api_key
           OCR
             OCR integration
         Classification
           ContentClassifier
-            classify_chunks()
+            classify_chunks
           Categorization
       Metadata
         Extraction
-          extract_metadata()
-          parse_metadata()
+          extract_metadata
+          parse_metadata
         Enrichment
-          add_context()
+          add_context
           semantic_identifier
       File Storage
         Abstraction Layer
-          get_default_file_store()
+          get_default_file_store
           FileStore interface
         Implementations
           S3 MinIO
-            upload_file()
-            download_file()
+            upload_file
+            download_file
           Local filesystem
           GCS
           Azure Blob
@@ -267,27 +267,27 @@ mindmap
       Document Index
         Vespa Client
           VespaIndex
-            index_chunks()
-            delete_documents()
-            get_document()
+            index_chunks
+            delete_documents
+            get_document
         Schema Management
           DocumentConfig
           ChunkSchema
           Deploy schema
         Indexing Operations
           Chunk Insertion
-            index()
-            batch_index()
+            index
+            batch_index
           Document Deletion
-            delete()
-            delete_by_connector()
+            delete
+            delete_by_connector
           Updates
-            update_metadata()
+            update_metadata
       Search & Retrieval
         Query Processing
-          build_vespa_query()
-          add_filters()
-          add_boosting()
+          build_vespa_query
+          add_filters
+          add_boosting
         Search Types
           Keyword Search
             BM25 ranking
@@ -307,32 +307,32 @@ mindmap
           Score fusion
       Knowledge Graph
         Entity Extraction
-          extract_entities()
+          extract_entities
         Relationship Mapping
-          build_relationships()
+          build_relationships
         Graph Queries
-          traverse_graph()
+          traverse_graph
 
     💬 **CHAT & LLM**
       Chat Pipeline
         Main Entry
-          process_message()
+          process_message
           StreamingChatHandler
         Components
           Prompt Builder
-            build_system_prompt()
-            build_user_prompt()
-            add_context()
+            build_system_prompt
+            build_user_prompt
+            add_context
           Turn Management
             ChatTurn model
             Turn tracking
           Stream Processing
-            stream_chat_response()
+            stream_chat_response
             Citation extraction
             Quote processing
           User Files
-            attach_files()
-            process_uploads()
+            attach_files
+            process_uploads
       LLM Integration
         Providers
           OpenAI
@@ -352,11 +352,11 @@ mindmap
             LiteLLM support
         Interfaces
           LLM base interface
-            stream()
-            invoke()
+            stream
+            invoke
           Streaming
             StreamingLLM
-            handle_stream_tokens()
+            handle_stream_tokens
           Non-streaming
             StandardLLM
         Configuration
@@ -365,41 +365,41 @@ mindmap
           Max tokens
           Stop sequences
         Token Management
-          count_tokens()
-          truncate_context()
+          count_tokens
+          truncate_context
           EE: Rate limiting
-            check_token_limit()
+            check_token_limit
             TokenRateLimit__UserGroup
       Context Assembly
         Search Integration
-          retrieve_documents()
-          rank_by_relevance()
+          retrieve_documents
+          rank_by_relevance
         Context Window
-          fit_to_context()
-          prioritize_chunks()
+          fit_to_context
+          prioritize_chunks
         Citation Handling
-          extract_citations()
-          map_to_sources()
+          extract_citations
+          map_to_sources
       Tools Framework
         Tool Interface
           BaseTool
-            execute()
+            execute
         Implementations
           Search Tool
-            search()
+            search
           Image Tool
-            analyze_image()
+            analyze_image
           Web Search
-            web_search()
+            web_search
           Knowledge Graph
-            graph_query()
+            graph_query
           MCP Tools
-            mcp_execute()
+            mcp_execute
       Personas Assistants
         Management
           Persona model
-          create_persona()
-          update_persona()
+          create_persona
+          update_persona
         Configuration
           System prompt
           Search settings
@@ -447,36 +447,36 @@ mindmap
       Task Categories
         Indexing
           Connector Indexing
-            run_connector_index()
+            run_connector_index
             Index job coordination
           Document Sync
-            sync_vespa()
+            sync_vespa
             Vespa operations
           Pruning
-            prune_documents()
+            prune_documents
             Remove stale docs
         Connector Management
           Deletion
-            delete_connector()
+            delete_connector
             Cleanup
           Validation
-            validate_connector()
+            validate_connector
         Permission Syncing EE
           Document Permissions
-            sync_doc_permissions()
+            sync_doc_permissions
           Group Syncing
-            sync_external_groups()
+            sync_external_groups
         Monitoring
           Health Checks
-            check_celery_queues()
-            check_process_memory()
+            check_celery_queues
+            check_process_memory
           System Status
-            collect_metrics()
+            collect_metrics
         Cleanup
           Periodic cleanup
-            cleanup_old_data()
+            cleanup_old_data
           User file sync
-            sync_user_files()
+            sync_user_files
       Task Management
         Scheduling
           Beat schedule
@@ -632,26 +632,26 @@ mindmap
           Error logging
       Dependencies
         Database Session
-          get_session()
+          get_session
         Current User
-          current_user()
-          current_admin()
+          current_user
+          current_admin
         Feature Flags
-          check_feature_enabled()
+          check_feature_enabled
 
     📊 **EE FEATURES ENTERPRISE**
       Permission System
         User Groups
           Group Management
-            create_user_group()
-            add_users_to_group()
-            assign_connectors()
+            create_user_group
+            add_users_to_group
+            assign_connectors
           Curator Roles
             Group curators
             Permission delegation
           Integration Points
             43 files integrate
-            fetch_versioned_implementation()
+            fetch_versioned_implementation
         External Permissions
           Document Sync
             Confluence
@@ -669,9 +669,9 @@ mindmap
             User email mapping
         Access Control
           ACL System
-            prefix_user_email()
-            prefix_user_group()
-            prefix_external_group()
+            prefix_user_email
+            prefix_user_group
+            prefix_external_group
           Filtering
             Search result filtering
             Document access checks
@@ -727,7 +727,7 @@ mindmap
           Schema separation
           Per-tenant DB
         Tenant Routing
-          get_tenant_id_for_email()
+          get_tenant_id_for_email
           Middleware routing
         Configuration
           Per-tenant settings
@@ -829,7 +829,7 @@ mindmap
           redis_usergroup
       Monitoring
         Logging
-          setup_logger()
+          setup_logger
           Structured logging
         Tracing
           Request tracing
@@ -845,12 +845,12 @@ mindmap
           Tokenization
           Text processing
         Encryption
-          encrypt_string()
-          decrypt_string()
+          encrypt_string
+          decrypt_string
         Versioning
           OnyxVersion
           EE detection
-          fetch_versioned_implementation()
+          fetch_versioned_implementation
       Deployment
         Docker
           Backend Dockerfile
