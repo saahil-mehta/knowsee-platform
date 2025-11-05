@@ -1,89 +1,186 @@
-<!-- ONYX_METADATA={"link": "https://github.com/onyx-dot-app/onyx/blob/main/web/README.md"} -->
+# Shadow Knowsee Web Frontend
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Next.js 15 + React + TypeScript chat interface for GPT-OSS-120B.
 
-## Getting Started
-
-Install node / npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-Install all dependencies: `npm i`
-
-Then, run the development server:
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env.local
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000)
 
-_Note:_ if you are having problems accessing the ^, try setting the `WEB_DOMAIN` env variable to
-`http://127.0.0.1:3000` and accessing it there.
+## Prerequisites
 
-## Testing
+- Node.js 20+
+- npm or yarn
+- Running dev API server (see `../dev/README.md`)
 
-This testing process will reset your application into a clean state.
-Don't run these tests if you don't want to do this!
+## Development
 
-Bring up the entire application.
+```bash
+# Start dev server with hot reload
+npm run dev
 
-0. Install playwright dependencies
-```cd web
-npx playwright install
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# Production build
+npm run build
+
+# Start production server
+npm start
 ```
 
-1. Reset the instance
-
-```cd backend
-export PYTEST_IGNORE_SKIP=true
-pytest -s tests/integration/tests/playwright/test_playwright.py
-```
-
-If you don't want to reset your local instance, you can still run playwright tests
-with SKIP_AUTH=true. This is convenient but slightly different from what happens
-in CI so tests might pass locally and fail in CI.
-
-```cd web
-SKIP_AUTH=true npx playwright test create_and_edit_assistant.spec.ts --project=no-auth
-```
-
-2. Run playwright
+## Project Structure
 
 ```
-cd web
-npx playwright test
+web/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── page.tsx            # Home page (chat interface)
+│   │   ├── globals.css         # Global styles
+│   │   └── api/                # API routes
+│   │       ├── chat/           # Chat endpoint
+│   │       └── upload/         # File upload
+│   ├── components/             # React components
+│   │   └── chat/               # Chat-specific components
+│   │       ├── ChatInterface.tsx
+│   │       ├── MessageList.tsx
+│   │       ├── Message.tsx
+│   │       ├── ChatInput.tsx
+│   │       └── ...
+│   ├── hooks/                  # Custom React hooks
+│   │   ├── useChat.ts
+│   │   ├── useConversations.ts
+│   │   └── useFileUpload.ts
+│   ├── lib/                    # Utility functions
+│   │   ├── api.ts              # API client
+│   │   ├── storage.ts          # LocalStorage
+│   │   └── streaming.ts        # SSE handling
+│   └── types/                  # TypeScript definitions
+│       └── chat.ts
+├── public/                     # Static assets
+├── package.json
+├── next.config.js              # Next.js configuration
+├── tailwind.config.ts          # Tailwind CSS config
+└── tsconfig.json               # TypeScript config
 ```
 
-To run a single test:
+## Features
 
+- ✅ Real-time streaming chat
+- ✅ Conversation history
+- ✅ File upload support
+- ✅ Responsive design
+- ✅ TypeScript
+- ✅ Tailwind CSS
+
+## API Integration
+
+The frontend connects to the mock API server at `http://localhost:8000` in development.
+
+API endpoints used:
+- `POST /v1/chat/completions` - Chat with streaming
+- `POST /v1/files/upload` - File upload
+
+## Environment Variables
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
-npx playwright test landing-page.spec.ts
+
+See `.env.example` for all available options.
+
+## Deployment
+
+### Docker
+
+```bash
+# Build production image
+docker build -t knowsee-web .
+
+# Run container
+docker run -p 3000:3000 knowsee-web
 ```
 
-If running locally, interactive options can help you see exactly what is happening in
-the test.
+### Terraform (Cloud Run)
 
-```
-npx playwright test --ui
-npx playwright test --headed
-```
-
-3. Inspect results
-
-By default, playwright.config.ts is configured to output the results to:
-
-```
-web/test-results
+```bash
+# From project root
+cd terraform
+make staging     # Deploy to staging
+make prod        # Deploy to production
 ```
 
-4. Upload results to Chromatic (Optional)
+## Tech Stack
 
-This step would normally not be run by third party developers, but first party devs
-may use this for local troubleshooting and testing.
+- **Framework**: Next.js 15.1.6 (App Router)
+- **UI**: React 18.3.1
+- **Language**: TypeScript 5.0
+- **Styling**: Tailwind CSS 3.4
+- **State**: Zustand 5.0
+- **Deployment**: Cloud Run (Terraform)
 
+## Development Tips
+
+### Hot Reload
+Changes to components automatically reload in development mode.
+
+### Type Safety
+Run `npm run type-check` to catch TypeScript errors before committing.
+
+### Tailwind IntelliSense
+Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) VS Code extension for autocomplete.
+
+### API Testing
+Use the FastAPI docs at [http://localhost:8000/docs](http://localhost:8000/docs) to test API endpoints.
+
+## Troubleshooting
+
+### Port 3000 already in use
+
+```bash
+# Use different port
+PORT=3001 npm run dev
 ```
-cd web
-npx chromatic --playwright --project-token={your token here}
+
+### API connection errors
+
+1. Ensure dev API is running: `cd ../dev && docker-compose ps`
+2. Check API health: `curl http://localhost:8000/health`
+3. Verify `.env.local` has correct `NEXT_PUBLIC_API_URL`
+
+### Build errors
+
+```bash
+# Clear Next.js cache
+rm -rf .next
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
 ```
+
+## Contributing
+
+1. Create a feature branch
+2. Make changes
+3. Run `npm run type-check` and `npm run lint`
+4. Test locally
+5. Submit pull request
+
+## License
+
+Private project - All rights reserved

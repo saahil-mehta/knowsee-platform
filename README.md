@@ -1,103 +1,292 @@
-<a name="readme-top"></a>
+# Shadow Knowsee
 
-<h2 align="center">
-    <a href="https://www.onyx.app/"> <img width="50%" src="https://github.com/onyx-dot-app/onyx/blob/logo/OnyxLogoCropped.jpg?raw=true)" /></a>
-</h2>
+AI-powered chat interface using GPT-OSS-120B, built with Next.js 15 and deployed on Google Cloud Platform.
 
-<p align="center">Open Source AI Platform</p>
+## Project Structure
 
-<p align="center">
-    <a href="https://discord.gg/TDJ59cGV2X" target="_blank">
-        <img src="https://img.shields.io/badge/discord-join-blue.svg?logo=discord&logoColor=white" alt="Discord">
-    </a>
-    <a href="https://docs.onyx.app/" target="_blank">
-        <img src="https://img.shields.io/badge/docs-view-blue" alt="Documentation">
-    </a>
-    <a href="https://docs.onyx.app/" target="_blank">
-        <img src="https://img.shields.io/website?url=https://www.onyx.app&up_message=visit&up_color=blue" alt="Documentation">
-    </a>
-    <a href="https://github.com/onyx-dot-app/onyx/blob/main/LICENSE" target="_blank">
-        <img src="https://img.shields.io/static/v1?label=license&message=MIT&color=blue" alt="License">
-    </a>
-</p>
+```
+knowsee/
+├── dev/                    # Development environment
+│   ├── api/                # Mock API server (FastAPI)
+│   └── docker-compose.yml  # Docker services for dev
+├── web/                    # Frontend application
+│   ├── src/
+│   │   ├── app/            # Next.js App Router
+│   │   ├── components/     # React components
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── lib/            # Utilities
+│   │   └── types/          # TypeScript types
+│   └── Dockerfile          # Production build
+└── terraform/              # Infrastructure as Code
+    ├── modules/            # Reusable modules
+    ├── infra/              # Shared infrastructure templates
+    ├── permissions/        # IAM templates
+    └── environments/       # Environment configs
+        ├── staging/
+        └── prod/
+```
 
+## Quick Start
 
+### Prerequisites
 
-**[Onyx](https://www.onyx.app/)** is a feature-rich, self-hostable Chat UI that works with any LLM. It is easy to deploy and can run in a completely airgapped environment.
+- Node.js 20+
+- Docker & Docker Compose
+- Python 3.11+ (for API development)
+- Terraform (for deployment)
 
-Onyx comes loaded with advanced features like Agents, Web Search, RAG, MCP, Deep Research, Connectors to 40+ knowledge sources, and more.
+### 1. Start Development Environment
 
-> [!TIP]
-> Run Onyx with one command (or see deployment section below):
-> ```
-> curl -fsSL https://raw.githubusercontent.com/onyx-dot-app/onyx/main/deployment/docker_compose/install.sh > install.sh && chmod +x install.sh && ./install.sh
-> ```
+```bash
+# Start mock API server
+cd dev
+docker-compose up -d
 
-****
+# Verify API is running
+curl http://localhost:8000/health
+```
 
-![Onyx Chat Silent Demo](https://github.com/onyx-dot-app/onyx/releases/download/v0.21.1/OnyxChatSilentDemo.gif)
+### 2. Start Frontend
 
+```bash
+# Install dependencies
+cd web
+npm install
 
+# Copy environment file
+cp .env.example .env.local
 
-## ⭐ Features
-- **🤖 Custom Agents:** Build AI Agents with unique instructions, knowledge and actions.
-- **🌍 Web Search:** Browse the web with Google PSE, Exa, and Serper as well as an in-house scraper or Firecrawl.
-- **🔍 RAG:** Best in class hybrid-search + knowledge graph for uploaded files and ingested documents from connectors. 
-- **🔄 Connectors:** Pull knowledge, metadata, and access information from over 40 applications.
-- **🔬 Deep Research:** Get in depth answers with an agentic multi-step search.
-- **▶️ Actions & MCP:** Give AI Agents the ability to interact with external systems.
-- **💻 Code Interpreter:** Execute code to analyze data, render graphs and create files.
-- **🎨 Image Generation:** Generate images based on user prompts.
-- **👥 Collaboration:** Chat sharing, feedback gathering, user management, usage analytics, and more.
+# Start development server
+npm run dev
+```
 
-Onyx works with all LLMs (like OpenAI, Anthropic, Gemini, etc.) and self-hosted LLMs (like Ollama, vLLM, etc.)
+Visit [http://localhost:3000](http://localhost:3000)
 
-To learn more about the features, check out our [documentation](https://docs.onyx.app/welcome)!
+## Features
 
+- ✅ Real-time streaming chat interface
+- ✅ Conversation history (LocalStorage)
+- ✅ File upload support
+- ✅ Responsive design (mobile-friendly)
+- ✅ TypeScript & type-safe
+- ✅ Dark mode support
+- ✅ Production-ready deployment
 
+## Architecture
 
-## 🚀 Deployment
-Onyx supports deployments in Docker, Kubernetes, Terraform, along with guides for major cloud providers.
+### Development
+```
+┌─────────────────┐
+│  Frontend       │
+│  Next.js :3000  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Mock API       │
+│  FastAPI :8000  │
+└─────────────────┘
+```
 
-See guides below:
-- [Docker](https://docs.onyx.app/deployment/local/docker) or [Quickstart](https://docs.onyx.app/deployment/getting_started/quickstart) (best for most users)
-- [Kubernetes](https://docs.onyx.app/deployment/local/kubernetes) (best for large teams)
-- [Terraform](https://docs.onyx.app/deployment/local/terraform) (best for teams already using Terraform)
-- Cloud specific guides (best if specifically using [AWS EKS](https://docs.onyx.app/deployment/cloud/aws/eks), [Azure VMs](https://docs.onyx.app/deployment/cloud/azure), etc.)
+### Production
+```
+┌─────────────────┐
+│  Frontend       │
+│  Cloud Run      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  GPT-OSS-120B   │
+│  Vertex AI      │
+└─────────────────┘
+```
 
-> [!TIP]  
-> **To try Onyx for free without deploying, check out [Onyx Cloud](https://cloud.onyx.app/signup)**.
+## Development Workflow
 
+### Running the Full Stack
 
+```bash
+# Terminal 1: Start API
+cd dev
+docker-compose up
 
-## 🔍 Other Notable Benefits
-Onyx is built for teams of all sizes, from individual users to the largest global enterprises.
+# Terminal 2: Start Frontend
+cd web
+npm run dev
+```
 
-- **Enterprise Search**: far more than simple RAG, Onyx has custom indexing and retrieval that remains performant and accurate for scales of up to tens of millions of documents.
-- **Security**: SSO (OIDC/SAML/OAuth2), RBAC, encryption of credentials, etc.
-- **Management UI**: different user roles such as basic, curator, and admin.
-- **Document Permissioning**: mirrors user access from external apps for RAG use cases.
+### Testing the API
 
+```bash
+# Stream chat
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Hello!"}], "stream": true}'
 
+# Check health
+curl http://localhost:8000/health
+```
 
-## 🚧 Roadmap
-To see ongoing and upcoming projects, check out our [roadmap](https://github.com/orgs/onyx-dot-app/projects/2)!
+### Code Quality
 
+```bash
+cd web
+npm run type-check  # TypeScript checking
+npm run lint        # ESLint
+npm run build       # Production build test
+```
 
+## Deployment
 
-## 📚 Licensing
-There are two editions of Onyx:
+### Deploy to Staging
 
-- Onyx Community Edition (CE) is available freely under the MIT license.
-- Onyx Enterprise Edition (EE) includes extra features that are primarily useful for larger organizations.
-For feature details, check out [our website](https://www.onyx.app/pricing).
+```bash
+# Configure Terraform
+cd terraform
+make staging-init
 
+# Deploy infrastructure + frontend
+make staging
+```
 
+### Deploy to Production
 
-## 👪 Community
-Join our open source community on **[Discord](https://discord.gg/TDJ59cGV2X)**!
+```bash
+make prod
+```
 
+## Configuration
 
+### Environment Variables
 
-## 💡 Contributing
-Looking to contribute? Please check out the [Contribution Guide](CONTRIBUTING.md) for more details.
+**Development (`dev/.env`):**
+```env
+MOCK_DELAY_MS=50
+STREAMING_ENABLED=true
+```
+
+**Frontend (`web/.env.local`):**
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+**Production (Terraform):**
+- `terraform/environments/staging/terraform.tfvars`
+- `terraform/environments/prod/terraform.tfvars`
+
+## Project Details
+
+### Tech Stack
+
+**Frontend:**
+- Next.js 15.1.6 (App Router, Server Components)
+- React 18.3.1
+- TypeScript 5.0
+- Tailwind CSS 3.4
+- Zustand (state management)
+
+**Backend (Dev):**
+- FastAPI
+- Python 3.11
+- Uvicorn
+- OpenAI-compatible API
+
+**Infrastructure:**
+- Google Cloud Platform
+- Vertex AI (model hosting)
+- Cloud Run (frontend)
+- Cloud Storage (files)
+- Terraform (IaC)
+
+### Key Components
+
+**Frontend:**
+- `ChatInterface` - Main container
+- `MessageList` - Scrollable messages
+- `Message` - Individual message bubble
+- `ChatInput` - Input with send button
+
+**Hooks:**
+- `useChat` - Chat logic & streaming
+- `useConversations` - History management
+
+**API Client:**
+- `streamChatCompletion` - SSE streaming
+- `uploadFile` - File upload
+
+## Troubleshooting
+
+### Port conflicts
+
+```bash
+# Check what's using port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Check what's using port 8000
+lsof -ti:8000 | xargs kill -9
+```
+
+### Docker issues
+
+```bash
+# Rebuild containers
+cd dev
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
+```
+
+### Frontend build errors
+
+```bash
+cd web
+rm -rf .next node_modules
+npm install
+npm run build
+```
+
+## Documentation
+
+- [Dev Environment](./dev/README.md) - Local development setup
+- [Frontend](./web/README.md) - Web application details
+- [Terraform](./terraform/README.md) - Infrastructure guide
+- [Architecture](./terraform/ARCHITECTURE.md) - System design
+
+## Roadmap
+
+### Phase 1 (Current - MVP)
+- ✅ Basic chat interface
+- ✅ Streaming responses
+- ✅ Conversation history
+- ✅ File upload support
+- ✅ Dev environment
+- ✅ Terraform setup
+
+### Phase 2 (Next)
+- [ ] User authentication
+- [ ] Multi-model support
+- [ ] Enhanced file handling
+- [ ] Markdown/code rendering
+- [ ] Search conversations
+- [ ] Share conversations
+
+### Phase 3 (Future)
+- [ ] RAG capabilities
+- [ ] Voice input
+- [ ] Image generation
+- [ ] Function calling
+- [ ] Admin dashboard
+- [ ] Usage analytics
+
+## Contributing
+
+This is a private project. For questions or suggestions, contact the team.
+
+## License
+
+Private - All rights reserved
+
+---
+
+**Built with ❤️ using Next.js, FastAPI, and Google Cloud Platform**
