@@ -88,7 +88,7 @@ fmt:
 validate:
 	@for env in $(TERRAFORM_ENVS); do \
 		printf "Validating $$env...\n"; \
-		cd $(TERRAFORM_ROOT)/environments/$$env && terraform validate || exit 1; \
+		(cd $(TERRAFORM_ROOT)/environments/$$env && terraform validate) || exit 1; \
 	done
 
 clean:
