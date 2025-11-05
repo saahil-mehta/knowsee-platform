@@ -1,0 +1,74 @@
+services:
+  # Mock API server for local development
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: knowsee-mock-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MOCK_DELAY_MS=${MOCK_DELAY_MS:-50}
+      - STREAMING_ENABLED=${STREAMING_ENABLED:-true}
+    volumes:
+      - ./api:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - knowsee-dev
+
+  # Frontend Next.js application
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: knowsee-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ../web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      api:
+        condition: service_healthy
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - knowsee-dev
+
+  # Redis for session management (optional, for future use)
+  redis:
+    image: redis:7-alpine
+    container_name: knowsee-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - knowsee-dev
+
+networks:
+  knowsee-dev:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
