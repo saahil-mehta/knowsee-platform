@@ -52,3 +52,5 @@ coverage/
 
 # Misc
 *.pem
+.scratchpad.txt
+.learning-res.txt
