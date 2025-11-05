@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Shadow Knowsee - AI Chat Assistant',
+  title: 'Knowsee - AI Chat Assistant',
   description: 'Chat with GPT-OSS-120B powered by Vertex AI',
 }
 

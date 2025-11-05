@@ -1,5 +1,5 @@
 # File: Makefile
-# Desc: Makefile for managing Shadow Knowsee development and infrastructure
+# Desc: Makefile for managing Knowsee development and infrastructure
 #
 ##############################################################################
 
@@ -15,7 +15,7 @@ PROD_TFVARS = $(PROD_DIR)/terraform.tfvars
 
 # Default target - show help
 help:
-	@echo "Shadow Knowsee - Development & Infrastructure Management"
+	@echo "Knowsee - Development & Infrastructure Management"
 	@echo ""
 	@echo "Development Commands:"
 	@echo "  make dev             - Start development environment (API + Frontend)"
@@ -48,7 +48,7 @@ help:
 ##############################################################################
 
 dev:
-	@echo "==> Starting Shadow Knowsee development environment..."
+	@echo "==> Starting Knowsee development environment..."
 	@echo ""
 	@cd dev && docker-compose up -d
 	@echo ""
@@ -60,7 +60,7 @@ dev:
 	@curl -s http://localhost:3000 > /dev/null && echo "  ✓ Frontend is ready!" || echo "  ⏳ Frontend starting..."
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════╗"
-	@echo "║     Shadow Knowsee Development Environment Ready!     ║"
+	@echo "║     Knowsee Development Environment Ready!     ║"
 	@echo "╚════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "🌐 Services:"

@@ -1,4 +1,4 @@
-# Shadow Knowsee Web Frontend
+# Knowsee Web Frontend
 
 Next.js 15 + React + TypeScript chat interface for GPT-OSS-120B.
 

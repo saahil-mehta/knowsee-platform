@@ -1,6 +1,6 @@
-# Shadow Knowsee Development Environment
+# Knowsee Development Environment
 
-This directory contains the local development environment for Shadow Knowsee, including a mock GPT-OSS-120B API server.
+This directory contains the local development environment for Knowsee, including a mock GPT-OSS-120B API server.
 
 ## Quick Start
 
