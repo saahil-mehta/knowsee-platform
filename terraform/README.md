@@ -1,6 +1,6 @@
-# Shadow Knowsee - Terraform Infrastructure
+# Knowsee - Terraform Infrastructure
 
-This directory contains the Terraform infrastructure-as-code for the Shadow Knowsee project.
+This directory contains the Terraform infrastructure-as-code for the Knowsee project.
 
 ## Structure
 

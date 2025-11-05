@@ -1,4 +1,4 @@
-# Shadow Knowsee
+# Knowsee
 
 AI-powered chat interface using GPT-OSS-120B, built with Next.js 15 and deployed on Google Cloud Platform.
 

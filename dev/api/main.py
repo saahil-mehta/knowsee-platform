@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 
-app = FastAPI(title="Shadow Knowsee Mock API", version="1.0.0")
+app = FastAPI(title="Knowsee Mock API", version="1.0.0")
 
 # CORS configuration for local development
 app.add_middleware(
@@ -61,7 +61,7 @@ This response is being streamed token-by-token to simulate real model behavior. 
 
 In production, I'll be replaced with the actual GPT-OSS-120B model hosted on Vertex AI.""",
 
-    "hello": "Hello! I'm the Shadow Knowsee chat assistant. How can I help you today?",
+    "hello": "Hello! I'm the Knowsee chat assistant. How can I help you today?",
 
     "help": """I can assist you with various tasks:
 
@@ -151,7 +151,7 @@ async def root():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "service": "Shadow Knowsee Mock API",
+        "service": "Knowsee Mock API",
         "model": "gpt-oss-120b-mock",
         "streaming_enabled": STREAMING_ENABLED,
         "mock_delay_ms": MOCK_DELAY_MS,

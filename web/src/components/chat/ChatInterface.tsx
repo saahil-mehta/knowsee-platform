@@ -26,7 +26,7 @@ export default function ChatInterface() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Shadow Knowsee
+              Knowsee
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Powered by GPT-OSS-120B
