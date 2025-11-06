@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react'
 
 interface ChatInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string) => Promise<void> | void
   disabled?: boolean
 }
 
@@ -11,9 +11,9 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   const [message, setMessage] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (message.trim() && !disabled) {
-      onSend(message)
+      await onSend(message)
       setMessage('')
 
       // Reset textarea height
@@ -26,11 +26,11 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
+      void handleSend()
     }
   }
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
 
     // Auto-resize textarea
@@ -63,7 +63,9 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
         </div>
 
         <button
-          onClick={handleSend}
+          onClick={() => {
+            void handleSend()
+          }}
           disabled={!message.trim() || disabled}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-white transition-all hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Send message"

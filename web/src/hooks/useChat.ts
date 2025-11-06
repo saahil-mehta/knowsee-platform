@@ -1,135 +1,137 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { streamChatCompletion } from '@/lib/api'
-import { storage } from '@/lib/storage'
-import type { Message, Conversation } from '@/types/chat'
+import type { Message } from '@/types/chat'
+import { useChatStore } from '@/state/chat-store'
 
-export function useChat(conversationId: string | null) {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+const snippetFrom = (content: string) => {
+  const trimmed = content.trim()
+  return trimmed.length > 60 ? `${trimmed.slice(0, 57)}...` : trimmed || 'New chat'
+}
 
-  // Load conversation messages
-  const loadConversation = useCallback((id: string) => {
-    const conversation = storage.getConversation(id)
-    if (conversation) {
-      setMessages(conversation.messages)
-    }
-  }, [])
+const EMPTY_MESSAGES: Message[] = []
 
-  // Send a message and stream response
+export function useChat() {
+  const {
+    conversation,
+    conversationId,
+    isStreaming,
+    error,
+    createConversation,
+    addMessages,
+    updateMessage,
+    removeMessage,
+    renameConversation,
+    setStreaming,
+    setError,
+  } = useChatStore(
+    useShallow((state) => {
+      const activeConversation = state.conversations.find(
+        (item) => item.id === state.activeConversationId
+      )
+      return {
+        conversation: activeConversation,
+        conversationId: state.activeConversationId,
+        isStreaming: state.isStreaming,
+        error: state.error,
+        createConversation: state.createConversation,
+        addMessages: state.addMessages,
+        updateMessage: state.updateMessage,
+        removeMessage: state.removeMessage,
+        renameConversation: state.renameConversation,
+        setStreaming: state.setStreaming,
+        setError: state.setError,
+      }
+    })
+  )
+
+  const messages = conversation?.messages ?? EMPTY_MESSAGES
+
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!content.trim() || isStreaming) return
-
-      setError(null)
-
-      // Create user message
-      const userMessage: Message = {
-        id: `msg-${Date.now()}-user`,
-        role: 'user',
-        content: content.trim(),
-        timestamp: Date.now(),
+      const trimmed = content.trim()
+      if (!trimmed || isStreaming) {
+        return
       }
 
-      // Create assistant message placeholder
+      let activeId = conversationId
+      if (!activeId) {
+        activeId = createConversation({ title: snippetFrom(trimmed) })
+      }
+
+      const now = Date.now()
+      const userMessage: Message = {
+        id: `msg-${now}-user`,
+        role: 'user',
+        content: trimmed,
+        timestamp: now,
+      }
+
       const assistantMessage: Message = {
-        id: `msg-${Date.now()}-assistant`,
+        id: `msg-${now}-assistant`,
         role: 'assistant',
         content: '',
-        timestamp: Date.now(),
+        timestamp: now,
       }
 
-      const newMessages = [...messages, userMessage, assistantMessage]
-      setMessages(newMessages)
-      setIsStreaming(true)
+      addMessages(activeId, [userMessage, assistantMessage])
+      if (!conversationId) {
+        renameConversation(activeId, snippetFrom(trimmed))
+      }
+
+      setStreaming(true)
+      setError(null)
+
+      const request = {
+        messages: [...messages, userMessage].map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 2048,
+      }
 
       try {
-        // Prepare request
-        const request = {
-          messages: [...messages, userMessage].map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          stream: true,
-          temperature: 0.7,
-          max_tokens: 2048,
-        }
-
-        // Stream response
         let fullContent = ''
         for await (const chunk of streamChatCompletion(request)) {
           fullContent += chunk
-
-          // Update assistant message
-          setMessages((prev) => {
-            const updated = [...prev]
-            const lastMsg = updated[updated.length - 1]
-            if (lastMsg.role === 'assistant') {
-              lastMsg.content = fullContent
-            }
-            return updated
-          })
+          const contentSnapshot = fullContent
+          updateMessage(activeId, assistantMessage.id, (message) => ({
+            ...message,
+            content: contentSnapshot,
+            timestamp: Date.now(),
+          }))
         }
-
-        // Save conversation
-        if (conversationId) {
-          const conversation = storage.getConversation(conversationId)
-          if (conversation) {
-            conversation.messages = [...conversation.messages, userMessage, {
-              ...assistantMessage,
-              content: fullContent,
-            }]
-            conversation.updatedAt = Date.now()
-            storage.saveConversation(conversation)
-          }
-        } else {
-          // Create new conversation
-          const newConversation: Conversation = {
-            id: `conv-${Date.now()}`,
-            title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
-            messages: [userMessage, { ...assistantMessage, content: fullContent }],
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          }
-          storage.saveConversation(newConversation)
-        }
-      } catch (err) {
-        console.error('Chat error:', err)
-        setError(err instanceof Error ? err.message : 'Failed to send message')
-
-        // Remove failed assistant message
-        setMessages((prev) => prev.slice(0, -1))
+      } catch (cause) {
+        console.error('Chat error:', cause)
+        setError(cause instanceof Error ? cause.message : 'Failed to send message')
+        removeMessage(activeId, assistantMessage.id)
       } finally {
-        setIsStreaming(false)
+        setStreaming(false)
       }
     },
-    [messages, conversationId, isStreaming]
+    [
+      conversationId,
+      createConversation,
+      addMessages,
+      updateMessage,
+      removeMessage,
+      renameConversation,
+      setStreaming,
+      setError,
+      isStreaming,
+      messages,
+    ]
   )
 
-  // Stop streaming
-  const stopStreaming = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-    }
-    setIsStreaming(false)
-  }, [])
-
-  // Clear messages
-  const clearMessages = useCallback(() => {
-    setMessages([])
-  }, [])
-
   return {
+    conversationId,
     messages,
     isStreaming,
     error,
     sendMessage,
-    stopStreaming,
-    clearMessages,
-    loadConversation,
   }
 }

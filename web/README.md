@@ -180,7 +180,3 @@ npm install
 3. Run `npm run type-check` and `npm run lint`
 4. Test locally
 5. Submit pull request
-
-## License
-
-Private project - All rights reserved
