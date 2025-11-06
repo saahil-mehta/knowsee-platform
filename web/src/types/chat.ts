@@ -43,6 +43,7 @@ export interface StreamChunk {
 }
 
 export interface ChatRequest {
+  model?: string;
   messages: Array<{
     role: string;
     content: string;

@@ -13,6 +13,10 @@ const snippetFrom = (content: string) => {
 
 const EMPTY_MESSAGES: Message[] = []
 
+type SendOptions = {
+  model?: string
+}
+
 export function useChat() {
   const {
     conversation,
@@ -50,7 +54,7 @@ export function useChat() {
   const messages = conversation?.messages ?? EMPTY_MESSAGES
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, options?: SendOptions) => {
       const trimmed = content.trim()
       if (!trimmed || isStreaming) {
         return
@@ -85,6 +89,7 @@ export function useChat() {
       setError(null)
 
       const request = {
+        model: options?.model,
         messages: [...messages, userMessage].map((message) => ({
           role: message.role,
           content: message.content,
