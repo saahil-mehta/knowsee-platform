@@ -29,6 +29,7 @@ services:
       dockerfile: Dockerfile.dev
       target: development
     container_name: knowsee-web
+    working_dir: /app
     ports:
       - "3000:3000"
     environment:
@@ -36,13 +37,13 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
     volumes:
-      - ../web:/app
-      - /app/node_modules
-      - /app/.next
+      - ../web:/app:cached
+      - web-node-modules:/app/node_modules
+      - web-next-cache:/app/.next
     depends_on:
       api:
         condition: service_healthy
-    command: npm run dev
+    entrypoint: ["sh", "/app/scripts/docker-entrypoint.sh"]
     restart: unless-stopped
     networks:
       - knowsee-dev
@@ -71,4 +72,8 @@ networks:
 
 volumes:
   redis-data:
+    driver: local
+  web-node-modules:
+    driver: local
+  web-next-cache:
     driver: local

@@ -283,10 +283,4 @@ npm run build
 
 This is a private project. For questions or suggestions, contact the team.
 
-## License
-
-Private - All rights reserved
-
----
-
 **Built with ❤️ using Next.js, FastAPI, and Google Cloud Platform**

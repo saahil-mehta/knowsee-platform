@@ -1,179 +1,117 @@
 # File: Makefile
-# Desc: Makefile for managing Knowsee development and infrastructure
-#
-##############################################################################
+# Desc: Unified tooling for Knowsee development and infrastructure
 
-# Environment paths
-STAGING_DIR = terraform/environments/staging
-PROD_DIR = terraform/environments/prod
+SHELL := /bin/bash
 
-# Terraform variables
-STAGING_TFVARS = $(STAGING_DIR)/terraform.tfvars
-PROD_TFVARS = $(PROD_DIR)/terraform.tfvars
+FRONTEND_DIR := web
+COMPOSE_FILE := dev/docker-compose.yml
+DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
+TERRAFORM_ROOT := terraform
+TERRAFORM_ENVS := staging prod
+TF_VARS_NAME := terraform.tfvars
 
-.PHONY: help dev dev-start dev-stop dev-logs dev-restart frontend staging prod
+.PHONY: \
+	help \
+	dev dev-up dev-down dev-logs dev-restart dev-health \
+	frontend bootstrap lint test \
+	fmt validate clean \
+	$(TERRAFORM_ENVS) \
+	$(addsuffix -init,$(TERRAFORM_ENVS)) \
+	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
+	$(addsuffix -apply,$(TERRAFORM_ENVS)) \
+	$(addsuffix -output,$(TERRAFORM_ENVS)) \
+	$(addsuffix -destroy,$(TERRAFORM_ENVS))
 
-# Default target - show help
 help:
-	@echo "Knowsee - Development & Infrastructure Management"
-	@echo ""
-	@echo "Development Commands:"
-	@echo "  make dev             - Start development environment (API + Frontend)"
-	@echo "  make dev-start       - Start dev API server"
-	@echo "  make dev-stop        - Stop dev API server"
-	@echo "  make dev-logs        - View dev API logs"
-	@echo "  make dev-restart     - Restart dev API server"
-	@echo "  make frontend        - Install and start frontend dev server"
-	@echo ""
-	@echo "Cloud Deployment:"
-	@echo "  make staging         - Deploy to staging environment"
-	@echo "  make prod            - Deploy to prod environment"
-	@echo ""
-	@echo "Terraform Commands:"
-	@echo "  make staging-init    - Initialize staging terraform"
-	@echo "  make staging-plan    - Plan staging changes"
-	@echo "  make staging-apply   - Apply staging changes"
-	@echo "  make prod-init       - Initialize prod terraform"
-	@echo "  make prod-plan       - Plan prod changes"
-	@echo "  make prod-apply      - Apply prod changes"
-	@echo ""
-	@echo "Utility Commands:"
-	@echo "  make fmt             - Format all terraform files"
-	@echo "  make validate        - Validate terraform configs"
-	@echo "  make clean           - Clean terraform cache files"
-	@echo ""
+	@printf "\nKnowsee Toolkit\n"
+	@printf "  make dev          Start dev stack (API, web, redis)\n"
+	@printf "  make dev-down     Stop dev stack\n"
+	@printf "  make dev-logs     Tail container logs\n"
+	@printf "  make bootstrap    Prepare frontend dependencies and env files\n"
+	@printf "  make lint         Run frontend lint checks\n"
+	@printf "  make test         Run frontend Playwright smoke tests\n"
+	@printf "  make fmt          Run terraform fmt recursively\n"
+	@printf "  make validate     terraform validate for all environments\n"
+	@printf "  make clean        Remove terraform cache directories\n"
+	@printf "\nTerraform shortcuts:\n"
+	@printf "  make staging|prod Run init → plan → apply → output for the env\n"
+	@printf "  make staging-plan Run plan only (same for prod-plan)\n\n"
 
-##############################################################################
-# Development Environment
-##############################################################################
+dev: dev-up dev-health
+	@printf "\nServices ready:\n"
+	@printf "  Frontend: http://localhost:3000\n"
+	@printf "  API:      http://localhost:8000\n\n"
 
-dev:
-	@echo "==> Starting Knowsee development environment..."
-	@echo ""
-	@cd dev && docker-compose up -d
-	@echo ""
-	@echo "==> Waiting for services to be ready..."
-	@sleep 5
-	@echo ""
-	@echo "==> Checking service health..."
-	@curl -s http://localhost:8000/health > /dev/null && echo "  ✓ API is healthy!" || echo "  ✗ API not responding"
-	@curl -s http://localhost:3000 > /dev/null && echo "  ✓ Frontend is ready!" || echo "  ⏳ Frontend starting..."
-	@echo ""
-	@echo "╔════════════════════════════════════════════════════════╗"
-	@echo "║     Knowsee Development Environment Ready!     ║"
-	@echo "╚════════════════════════════════════════════════════════╝"
-	@echo ""
-	@echo "🌐 Services:"
-	@echo "   Frontend:   http://localhost:3000"
-	@echo "   API:        http://localhost:8000"
-	@echo "   API Docs:   http://localhost:8000/docs"
-	@echo ""
-	@echo "📝 Commands:"
-	@echo "   View logs:  make dev-logs"
-	@echo "   Stop all:   make dev-stop"
-	@echo "   Restart:    make dev-restart"
-	@echo ""
-	@echo "💬 Try it:"
-	@echo "   Open http://localhost:3000 and start chatting!"
-	@echo ""
+dev-up:
+	@$(DOCKER_COMPOSE) up -d --build
 
-dev-start:
-	@echo "==> Starting dev API server..."
-	@cd dev && docker-compose up -d
-	@echo "==> Dev API started at http://localhost:8000"
-
-dev-stop:
-	@echo "==> Stopping dev API server..."
-	@cd dev && docker-compose down
-	@echo "==> Dev API stopped"
+dev-down:
+	@$(DOCKER_COMPOSE) down
 
 dev-logs:
-	@echo "==> Streaming logs from all services (Ctrl+C to exit)..."
-	@cd dev && docker-compose logs -f
+	@$(DOCKER_COMPOSE) logs -f
 
 dev-restart:
-	@echo "==> Restarting all dev services..."
-	@cd dev && docker-compose restart
-	@echo "==> All services restarted"
-	@echo ""
-	@echo "Frontend: http://localhost:3000"
-	@echo "API:      http://localhost:8000"
+	@$(DOCKER_COMPOSE) restart
+
+dev-health:
+	@printf "Checking services...\n"
+	@curl -fsS --max-time 5 http://localhost:8000/health >/dev/null && printf "  api:   healthy\n" || printf "  api:   unavailable\n"
+	@{ \
+		attempt=0; \
+		while ! curl -fsS --max-time 5 http://localhost:3000 >/dev/null 2>&1; do \
+			attempt=$$((attempt + 1)); \
+			if [ $$attempt -ge 20 ]; then \
+				printf "  web:   starting (still warming up)\n"; \
+				exit 0; \
+			fi; \
+			sleep 1; \
+		done; \
+		printf "  web:   healthy\n"; \
+	}
 
 frontend:
-	@echo "==> Starting frontend development server..."
-	@cd web && npm install && npm run dev
+	@cd $(FRONTEND_DIR) && npm run dev
 
-##############################################################################
-# Cloud Deployment
-##############################################################################
+bootstrap:
+	@cd $(FRONTEND_DIR) && npm run bootstrap
 
-# Staging environment commands
-staging-init:
-	@echo "==> Initializing Terraform for staging environment..."
-	@cd $(STAGING_DIR) && terraform init
+lint:
+	@cd $(FRONTEND_DIR) && npm run lint
 
-staging-plan:
-	@echo "==> Planning Terraform changes for staging environment..."
-	@cd $(STAGING_DIR) && terraform plan -var-file=$(notdir $(STAGING_TFVARS))
+test:
+	@cd $(FRONTEND_DIR) && npm run test:e2e
 
-staging-apply:
-	@echo "==> Applying Terraform changes for staging environment..."
-	@cd $(STAGING_DIR) && terraform apply -var-file=$(notdir $(STAGING_TFVARS))
-
-staging-output:
-	@echo "==> Staging environment outputs:"
-	@cd $(STAGING_DIR) && terraform output
-
-staging-destroy:
-	@echo "==> WARNING: Destroying staging environment..."
-	@cd $(STAGING_DIR) && terraform destroy -var-file=$(notdir $(STAGING_TFVARS))
-
-staging: staging-init staging-plan staging-apply
-	@echo "==> Staging environment setup complete!"
-	@echo ""
-	@make staging-output
-
-# Production environment commands
-prod-init:
-	@echo "==> Initializing Terraform for prod environment..."
-	@cd $(PROD_DIR) && terraform init
-
-prod-plan:
-	@echo "==> Planning Terraform changes for prod environment..."
-	@cd $(PROD_DIR) && terraform plan -var-file=$(notdir $(PROD_TFVARS))
-
-prod-apply:
-	@echo "==> Applying Terraform changes for prod environment..."
-	@cd $(PROD_DIR) && terraform apply -var-file=$(notdir $(PROD_TFVARS))
-
-prod-output:
-	@echo "==> Production environment outputs:"
-	@cd $(PROD_DIR) && terraform output
-
-prod-destroy:
-	@echo "==> WARNING: Destroying production environment..."
-	@cd $(PROD_DIR) && terraform destroy -var-file=$(notdir $(PROD_TFVARS))
-
-prod: prod-init prod-plan prod-apply
-	@echo "==> Production environment setup complete!"
-	@echo ""
-	@make prod-output
-
-# Utility commands
 fmt:
-	@echo "==> Formatting Terraform files..."
-	@terraform fmt -recursive terraform/
-	@echo "==> Format complete!"
+	@terraform fmt -recursive $(TERRAFORM_ROOT)
 
 validate:
-	@echo "==> Validating staging environment..."
-	@cd $(STAGING_DIR) && terraform validate
-	@echo "==> Validating prod environment..."
-	@cd $(PROD_DIR) && terraform validate
-	@echo "==> Validation complete!"
+	@for env in $(TERRAFORM_ENVS); do \
+		printf "Validating $$env...\n"; \
+		(cd $(TERRAFORM_ROOT)/environments/$$env && terraform validate) || exit 1; \
+	done
 
 clean:
-	@echo "==> Cleaning Terraform cache files..."
-	@find terraform -type d -name ".terraform" -exec rm -rf {} + 2>/dev/null || true
-	@find terraform -type f -name ".terraform.lock.hcl" -delete 2>/dev/null || true
-	@echo "==> Clean complete!"
+	@find $(TERRAFORM_ROOT) -type d -name ".terraform" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find $(TERRAFORM_ROOT) -type f -name ".terraform.lock.hcl" -delete 2>/dev/null || true
+
+define TERRAFORM_TARGETS
+$(1)-init:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform init
+
+$(1)-plan:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform plan -var-file=$(TF_VARS_NAME)
+
+$(1)-apply:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform apply -var-file=$(TF_VARS_NAME)
+
+$(1)-output:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform output
+
+$(1)-destroy:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform destroy -var-file=$(TF_VARS_NAME)
+
+$(1): $(1)-init $(1)-plan $(1)-apply $(1)-output
+endef
+
+$(foreach env,$(TERRAFORM_ENVS),$(eval $(call TERRAFORM_TARGETS,$(env))))

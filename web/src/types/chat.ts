@@ -27,13 +27,6 @@ export interface UploadedFile {
   uploadedAt: number;
 }
 
-export interface ChatState {
-  conversations: Conversation[];
-  currentConversationId: string | null;
-  isStreaming: boolean;
-  error: string | null;
-}
-
 export interface StreamChunk {
   id: string;
   object: string;
