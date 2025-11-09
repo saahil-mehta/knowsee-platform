@@ -1,286 +1,129 @@
-# Knowsee
+# Knowsee Platform
 
-AI-powered chat interface using GPT-OSS-120B, built with Next.js 15 and deployed on Google Cloud Platform.
+Unified workspace that pairs the **sagent** ADK RAG agent with the Knowsee Next.js frontend so the conversational UI, ingestion pipeline, and infrastructure live in one repo.
+
+## Overview
+- **Frontend (`frontend/`)** – Next.js 15 + Tailwind experience that streams responses from GPT-OSS-120B (or any OpenAI-compatible endpoint) and ships via Cloud Run.
+- **Backend (`app/` + `dev/api/`)** – ADK-generated FastAPI stack for retrieval-augmented chat plus a lightweight mock API for local docker workflows.
+- **Infrastructure (`terraform/`)** – Shared modules and environment folders (`staging`, `prod`) managing Cloud Run, Vertex AI connections, and IAM via Terraform.
+- **Data (`data_ingestion/`)** – Pipelines that push curated docs into Vertex AI Search/Vector Search for grounding.
+
+`GEMINI.md` contains context for AI copilots, and the intro notebooks under `notebooks/` walk through agent prototyping + evaluation.
 
 ## Project Structure
+```
+knowsee-platform/
+├── app/                        # ADK agent application (FastAPI, agent logic)
+├── data_ingestion/             # Vertex AI data ingestion pipeline
+├── deployment/terraform/dev    # Lightweight dev project bootstrap
+├── dev/                        # Docker-compose stack + mock API
+├── frontend/                   # Next.js client
+├── notebooks/                  # Evaluation + prototyping notebooks
+├── terraform/                  # IaC (modules, infra, environments/{staging,prod})
+├── tests/                      # Backend unit + integration suites
+├── Makefile                    # Unified automation entrypoint
+└── README.md                   # This file
+```
 
-```
-knowsee/
-├── dev/                    # Development environment
-│   ├── api/                # Mock API server (FastAPI)
-│   └── docker-compose.yml  # Docker services for dev
-├── frontend/               # Frontend application
-│   ├── src/
-│   │   ├── app/            # Next.js App Router
-│   │   ├── components/     # React components
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── lib/            # Utilities
-│   │   └── types/          # TypeScript types
-│   └── Dockerfile          # Production build
-└── terraform/              # Infrastructure as Code
-    ├── modules/            # Reusable modules
-    ├── infra/              # Shared infrastructure templates
-    ├── permissions/        # IAM templates
-    └── environments/       # Environment configs
-        ├── staging/
-        └── prod/
-```
+## Prerequisites
+- Node.js 20+
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/getting-started/installation/) (auto-installed by `make install`)
+- Docker & Docker Compose v2
+- Google Cloud SDK (configured with the desired project)
+- Terraform ≥ 1.6
+- Make, curl, and bash (default on macOS/Linux)
 
 ## Quick Start
+1. **Install all dependencies**
+   ```bash
+   make install  # uv sync + npm install
+   ```
+2. **Run the ADK playground (Streamlit) during agent development**
+   ```bash
+   make playground
+   ```
+3. **Bring up the full dockerized dev stack (API + web + Redis)**
+   ```bash
+   make dev        # use make dev-down / dev-logs / dev-restart as needed
+   ```
+4. **Iterate on the frontend only**
+   ```bash
+   make frontend-dev
+   ```
+5. **Check quality gates before committing**
+   ```bash
+   make lint
+   make test
+   ```
 
-### Prerequisites
+## Key Make Targets
+| Target | Description |
+| ------ | ----------- |
+| `install` | Install uv if missing, sync Python deps, run `npm install` in `frontend/` |
+| `playground` | Launch ADK Streamlit playground on port 8501 |
+| `local-backend` | Start FastAPI locally with hot reload on `localhost:8000` |
+| `dev` | Build + start docker compose stack defined in `dev/docker-compose.yml` |
+| `frontend-dev` / `frontend-lint` / `frontend-test` | Workflows for the Next.js app |
+| `backend-lint` / `backend-test` | Codespell, Ruff, Mypy, and PyTest suites |
+| `data-ingestion` | Submit the Vertex AI data ingestion pipeline for the configured project |
+| `setup-dev-env` | Provision minimal dev infra via `deployment/terraform/dev` |
+| `fmt`, `validate`, `clean` | Terraform hygiene commands |
+| `staging` / `prod` | Run `init → plan → apply → output` for each environment (see `terraform/environments/<env>/`)
 
-- Node.js 20+
-- Docker & Docker Compose
-- Python 3.11+ (for API development)
-- Terraform (for deployment)
+Run `make help` anytime to see the full catalog.
 
-### 1. Start Development Environment
+## Development Workflows
+### ADK Agent (`app/`, `data_ingestion/`)
+- Modify `app/agent.py` to change retrieval or response logic. The FastAPI adapter lives in `app/fast_api_app.py`.
+- Use `make local-backend` for a tight loop or `make playground` for a UI-driven testing surface.
+- Update embeddings or corpora, then execute `make data-ingestion` to push fresh docs into Vertex AI Search / Vector Search (requires `gcloud auth login` and proper IAM).
+- Backend QA: `make backend-test` (unit + integration) and `make backend-lint` (codespell, Ruff, Mypy).
 
-```bash
-# Start mock API server
-cd dev
-docker-compose up -d
+### Frontend (`frontend/`)
+- `make frontend-dev` runs `npm run dev` with hot reload at `http://localhost:3000`.
+- Bootstrap `.env.local` quickly with `make bootstrap` (delegates to `npm run bootstrap`).
+- CI-aligned quality gates: `make frontend-lint` and `make frontend-test` (Playwright e2e smoke suite).
+- The app streams chat completions, supports dark mode, uploads, and responsive design out of the box.
 
-# Verify API is running
-curl http://localhost:8000/health
-```
+### Dockerized Stack (`dev/`)
+- `make dev-up` / `make dev-down` build and orchestrate the mock API, frontend, and Redis services.
+- `make dev-logs` tails combined container logs; `make dev-health` pings the FastAPI + Next.js endpoints until healthy.
+- Customize services via `dev/docker-compose.yml` and the FastAPI code under `dev/api/`.
 
-### 2. Start Frontend
+## Data & Infrastructure
+### Terraform Environments
+- Root modules live under `terraform/modules`, while reusable definitions (networking, IAM, infra) sit in `terraform/infra` and `terraform/permissions`.
+- Environment-specific state and vars are kept in `terraform/environments/staging|prod`. Copy `terraform.tfvars.example` if you need a new workspace.
+- Typical flow:
+  ```bash
+  make staging-plan      # only plan
+  make staging           # init → plan → apply → output
+  make staging-destroy   # tear down staging
+  ```
+- `make fmt` and `make validate` keep the configurations clean before pushing.
 
-```bash
-# Install dependencies
-cd frontend
-npm install
+### Data Ingestion Pipeline
+- The pipeline defined in `data_ingestion_pipeline/submit_pipeline.py` writes to `gs://<project>-sagent-rag` and expects a service account named `sagent-rag@<project>.iam.gserviceaccount.com`.
+- Ensure the `DATA_STORE_ID` and region flags match your Vertex AI Search or Vector Search deployment before running `make data-ingestion`.
 
-# Copy environment file
-cp .env.example .env.local
-
-# Start development server
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000)
-
-## Features
-
-- ✅ Real-time streaming chat interface
-- ✅ Conversation history (LocalStorage)
-- ✅ File upload support
-- ✅ Responsive design (mobile-friendly)
-- ✅ TypeScript & type-safe
-- ✅ Dark mode support
-- ✅ Production-ready deployment
-
-## Architecture
-
-### Development
-```
-┌─────────────────┐
-│  Frontend       │
-│  Next.js :3000  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Mock API       │
-│  FastAPI :8000  │
-└─────────────────┘
-```
-
-### Production
-```
-┌─────────────────┐
-│  Frontend       │
-│  Cloud Run      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  GPT-OSS-120B   │
-│  Vertex AI      │
-└─────────────────┘
-```
-
-## Development Workflow
-
-### Running the Full Stack
-
-```bash
-# Terminal 1: Start API
-cd dev
-docker-compose up
-
-# Terminal 2: Start Frontend
-cd frontend
-npm run dev
-```
-
-### Testing the API
-
-```bash
-# Stream chat
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Hello!"}], "stream": true}'
-
-# Check health
-curl http://localhost:8000/health
-```
-
-### Code Quality
-
-```bash
-cd frontend
-npm run type-check  # TypeScript checking
-npm run lint        # ESLint
-npm run build       # Production build test
-```
+### Developer Sandbox Project
+- `make setup-dev-env` boots the minimal GCP resources (datastore, service accounts, secrets) defined in `deployment/terraform/dev`. Supply overrides in `deployment/terraform/dev/vars/env.tfvars`.
 
 ## Deployment
+- **Backend to Cloud Run:**
+  ```bash
+  gcloud config set project <your-project>
+  make deploy    # optional: make deploy IAP=true PORT=8080
+  ```
+- **Frontend to Cloud Run / CDN:** build artifacts live in `frontend/`. Terraform modules can containerize and deploy the image; alternatively, reuse your existing CI/CD to `npm run build` then `gcloud run deploy`.
+- Use the Terraform environments for staging/production parity, or run `uvx agent-starter-pack setup-cicd` for the original ADK bootstrapper if preferred.
 
-### Deploy to Staging
+## Monitoring & Observability
+- OpenTelemetry traces/logs are emitted from `app/` to Cloud Trace and Logging, with persistent storage in BigQuery.
+- The Looker Studio dashboard template (https://lookerstudio.google.com/reporting/46b35167-b38b-4e44-bd37-701ef4307418/page/tEnnC) visualizes the events; follow the dashboard "Setup Instructions" tab to point it at your dataset.
+- Frontend metrics (Core Web Vitals, UX timings) can be forwarded via the same logging sink—consider adding a small helper under `frontend/src/lib/` (for example `telemetry.ts`) to batch and send events alongside backend traces.
 
-```bash
-# Configure Terraform
-cd terraform
-make staging-init
-
-# Deploy infrastructure + frontend
-make staging
-```
-
-### Deploy to Production
-
-```bash
-make prod
-```
-
-## Configuration
-
-### Environment Variables
-
-**Development (`dev/.env`):**
-```env
-MOCK_DELAY_MS=50
-STREAMING_ENABLED=true
-```
-
-**Frontend (`frontend/.env.local`):**
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-**Production (Terraform):**
-- `terraform/environments/staging/terraform.tfvars`
-- `terraform/environments/prod/terraform.tfvars`
-
-## Project Details
-
-### Tech Stack
-
-**Frontend:**
-- Next.js 15.1.6 (App Router, Server Components)
-- React 18.3.1
-- TypeScript 5.0
-- Tailwind CSS 3.4
-- Zustand (state management)
-
-**Backend (Dev):**
-- FastAPI
-- Python 3.11
-- Uvicorn
-- OpenAI-compatible API
-
-**Infrastructure:**
-- Google Cloud Platform
-- Vertex AI (model hosting)
-- Cloud Run (frontend)
-- Cloud Storage (files)
-- Terraform (IaC)
-
-### Key Components
-
-**Frontend:**
-- `ChatInterface` - Main container
-- `MessageList` - Scrollable messages
-- `Message` - Individual message bubble
-- `ChatInput` - Input with send button
-
-**Hooks:**
-- `useChat` - Chat logic & streaming
-- `useConversations` - History management
-
-**API Client:**
-- `streamChatCompletion` - SSE streaming
-- `uploadFile` - File upload
-
-## Troubleshooting
-
-### Port conflicts
-
-```bash
-# Check what's using port 3000
-lsof -ti:3000 | xargs kill -9
-
-# Check what's using port 8000
-lsof -ti:8000 | xargs kill -9
-```
-
-### Docker issues
-
-```bash
-# Rebuild containers
-cd dev
-docker-compose down
-docker-compose build --no-cache
-docker-compose up
-```
-
-### Frontend build errors
-
-```bash
-cd frontend
-rm -rf .next node_modules
-npm install
-npm run build
-```
-
-## Documentation
-
-- [Dev Environment](./dev/README.md) - Local development setup
-- [Frontend](./frontend/README.md) - Web application details
-- [Terraform](./terraform/README.md) - Infrastructure guide
-- [Architecture](./terraform/ARCHITECTURE.md) - System design
-
-## Roadmap
-
-### Phase 1 (Current - MVP)
-- ✅ Basic chat interface
-- ✅ Streaming responses
-- ✅ Conversation history
-- ✅ File upload support
-- ✅ Dev environment
-- ✅ Terraform setup
-
-### Phase 2 (Next)
-- [ ] User authentication
-- [ ] Multi-model support
-- [ ] Enhanced file handling
-- [ ] Markdown/code rendering
-- [ ] Search conversations
-- [ ] Share conversations
-
-### Phase 3 (Future)
-- [ ] RAG capabilities
-- [ ] Voice input
-- [ ] Image generation
-- [ ] Function calling
-- [ ] Admin dashboard
-- [ ] Usage analytics
-
-## Contributing
-
-This is a private project. For questions or suggestions, contact the team.
-
-**Built with ❤️ using Next.js, FastAPI, and Google Cloud Platform**
+## Additional Tips
+- Keep `GEMINI.md` updated so AI assistants understand custom commands, secrets, and architecture.
+- Notebooks under `notebooks/` demonstrate evaluation harnesses; start with the intro notebook to benchmark prompt changes before redeploying.
+- When adding new infrastructure, mirror the `staging` folder first, validate, then promote to `prod` via the same Make targets for consistency.

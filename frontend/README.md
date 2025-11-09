@@ -8,9 +8,10 @@ First, add your OpenAI API key to `.env.local` file:
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Then, run the development server:
+Then, install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
 # or
 yarn dev
