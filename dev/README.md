@@ -78,7 +78,7 @@ curl http://localhost:8000/health
 ## Development Workflow
 
 1. **Start services**: `docker-compose up -d`
-2. **Start frontend**: `cd ../web && npm run dev`
+2. **Start frontend**: `cd ../frontend && npm run dev`
 3. **Make changes**: API code hot-reloads automatically
 4. **View logs**: `docker-compose logs -f api`
 5. **Stop services**: `docker-compose down`
@@ -132,6 +132,6 @@ docker-compose logs --tail=100 -f
 ## Next Steps
 
 After dev environment is running:
-1. Initialize the frontend in `../web`
+1. Initialize the frontend in `../frontend`
 2. Connect frontend to http://localhost:8000
 3. Start building the chat interface!

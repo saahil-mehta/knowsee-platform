@@ -9,7 +9,7 @@ knowsee/
 ├── dev/                    # Development environment
 │   ├── api/                # Mock API server (FastAPI)
 │   └── docker-compose.yml  # Docker services for dev
-├── web/                    # Frontend application
+├── frontend/               # Frontend application
 │   ├── src/
 │   │   ├── app/            # Next.js App Router
 │   │   ├── components/     # React components
@@ -50,7 +50,7 @@ curl http://localhost:8000/health
 
 ```bash
 # Install dependencies
-cd web
+cd frontend
 npm install
 
 # Copy environment file
@@ -112,7 +112,7 @@ cd dev
 docker-compose up
 
 # Terminal 2: Start Frontend
-cd web
+cd frontend
 npm run dev
 ```
 
@@ -131,7 +131,7 @@ curl http://localhost:8000/health
 ### Code Quality
 
 ```bash
-cd web
+cd frontend
 npm run type-check  # TypeScript checking
 npm run lint        # ESLint
 npm run build       # Production build test
@@ -166,7 +166,7 @@ MOCK_DELAY_MS=50
 STREAMING_ENABLED=true
 ```
 
-**Frontend (`web/.env.local`):**
+**Frontend (`frontend/.env.local`):**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
@@ -240,7 +240,7 @@ docker-compose up
 ### Frontend build errors
 
 ```bash
-cd web
+cd frontend
 rm -rf .next node_modules
 npm install
 npm run build
@@ -249,7 +249,7 @@ npm run build
 ## Documentation
 
 - [Dev Environment](./dev/README.md) - Local development setup
-- [Frontend](./web/README.md) - Web application details
+- [Frontend](./frontend/README.md) - Web application details
 - [Terraform](./terraform/README.md) - Infrastructure guide
 - [Architecture](./terraform/ARCHITECTURE.md) - System design
 

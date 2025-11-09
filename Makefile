@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-FRONTEND_DIR := web
+FRONTEND_DIR := frontend
 COMPOSE_FILE := dev/docker-compose.yml
 DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
 TERRAFORM_ROOT := terraform

@@ -25,7 +25,7 @@ services:
   # Frontend Next.js application
   web:
     build:
-      context: ../web
+      context: ../frontend
       dockerfile: Dockerfile.dev
       target: development
     container_name: knowsee-web
@@ -37,7 +37,7 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
     volumes:
-      - ../web:/app:cached
+      - ../frontend:/app:cached
       - web-node-modules:/app/node_modules
       - web-next-cache:/app/.next
     depends_on:
