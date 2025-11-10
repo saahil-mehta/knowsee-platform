@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CopilotKit } from "@copilotkit/react-core";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavHeader } from "@/components/nav-header";
@@ -10,7 +10,7 @@ import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
 
 export const metadata: Metadata = {
-  title: "Knowsee Copilot",
+  title: "Knowsee",
   description: "AG-UI powered CopilotKit frontend wired to ADK backend",
 };
 
@@ -29,13 +29,21 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
+const instrumentSerif = Instrument_Serif({
+  weight: ["400"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-instrument-serif",
+  style: ["normal", "italic"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider
           attribute="class"
