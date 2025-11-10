@@ -26,7 +26,7 @@ BACKEND_PORT ?= 8000
 	frontend-dev frontend-lint frontend-test \
 	backend-test backend-lint test lint \
 	fmt validate clean \
-	sagent sagent-down \
+	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
@@ -148,11 +148,49 @@ dev-health:
 	}
 
 sagent:
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🚀 Building Sagent Stack (ADK + AG-UI + CopilotKit)"
+	@echo "════════════════════════════════════════════════════════════════"
 	@set -a && source .env && $(SAGENT_COMPOSE) up -d --build
-	@printf "\nSagent stack online:\n  CopilotKit UI  -> http://localhost:3000\n  ADK Backend    -> http://localhost:8000\n"
+	@echo ""
+	@echo "✅ Sagent stack is starting..."
+	@echo ""
+	@echo "   📍 Services:"
+	@echo "      • CopilotKit UI  → http://localhost:3000"
+	@echo "      • ADK Backend    → http://localhost:8000"
+	@echo ""
+	@echo "   📊 Monitor real-time logs:"
+	@echo "      • All services:   make sagent-logs"
+	@echo "      • Frontend only:  make sagent-logs-frontend"
+	@echo "      • Backend only:   make sagent-logs-backend"
+	@echo ""
+	@echo "   ⏳ Waiting for services to be healthy..."
+	@sleep 5
+	@echo ""
+	@$(SAGENT_COMPOSE) ps
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  ✨ Stack ready! Check logs above for any issues."
+	@echo "════════════════════════════════════════════════════════════════"
 
 sagent-down:
 	@set -a && source .env && $(SAGENT_COMPOSE) down
+
+sagent-logs:
+	@echo "📊 Streaming logs from all Sagent services (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f
+
+sagent-logs-frontend:
+	@echo "📊 Streaming frontend logs (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f sagent-frontend
+
+sagent-logs-backend:
+	@echo "📊 Streaming backend logs (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f sagent-backend
+
+sagent-status:
+	@echo "📊 Sagent service status:"
+	@$(SAGENT_COMPOSE) ps
 
 # ==============================================================================
 # Frontend workflows (Next.js)
