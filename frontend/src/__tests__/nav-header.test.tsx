@@ -16,14 +16,14 @@ vi.mock("@/components/theme-toggle", () => ({
 }));
 
 describe("NavHeader", () => {
-  it("renders the application title", () => {
+  it("renders the application title 'Know'", () => {
     render(<NavHeader />);
-    expect(screen.getByText("Knowsee Copilot")).toBeInTheDocument();
+    expect(screen.getByText("Know")).toBeInTheDocument();
   });
 
-  it("renders the live status indicator", () => {
+  it("renders the application title 'see'", () => {
     render(<NavHeader />);
-    expect(screen.getByText("Live")).toBeInTheDocument();
+    expect(screen.getByText("see")).toBeInTheDocument();
   });
 
   it("renders the new chat button", () => {

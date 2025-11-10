@@ -31,16 +31,18 @@ export function ChatShell({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-full flex-col p-4 md:p-8">
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-6">
+    <div className="flex h-full flex-col">
+      <div className="mx-auto flex h-full w-full max-w-3xl flex-col px-4 py-8">
+        <div className="flex flex-1 flex-col overflow-auto">
+          {hasMessages ? (
+            <MessageList messages={messages} isLoading={isLoading} />
+          ) : (
+            <EmptyState />
+          )}
+        </div>
+
         {!hasMessages && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h1 className="font-semibold text-2xl">Conversation Studio</h1>
-              <p className="text-muted-foreground text-sm">
-                Plan, research, and ship faster with CopilotKit and AG-UI.
-              </p>
-            </div>
+          <div className="mb-6 mt-auto">
             <QuickActions
               actions={quickActions}
               onSelect={onQuickAction}
@@ -49,24 +51,14 @@ export function ChatShell({
           </div>
         )}
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card">
-          <div className="flex-1 overflow-auto p-4">
-            {hasMessages ? (
-              <MessageList messages={messages} isLoading={isLoading} />
-            ) : (
-              <EmptyState actions={quickActions} onSelect={onQuickAction} isLoading={isLoading} />
-            )}
-          </div>
-
-          <div className="border-t p-4">
-            <ChatComposer
-              value={inputValue}
-              onChange={onInputChange}
-              onSend={onSend}
-              onStop={onStop}
-              isLoading={isLoading}
-            />
-          </div>
+        <div className="mt-auto pt-4">
+          <ChatComposer
+            value={inputValue}
+            onChange={onInputChange}
+            onSend={onSend}
+            onStop={onStop}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>
