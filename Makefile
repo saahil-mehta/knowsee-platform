@@ -10,6 +10,8 @@ SHELL := /bin/bash
 FRONTEND_DIR := frontend
 COMPOSE_FILE := dev/docker-compose.yml
 DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
+SAGENT_COMPOSE_FILE := dev/docker-compose.sagent.yml
+SAGENT_COMPOSE := docker compose -f $(SAGENT_COMPOSE_FILE)
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -24,6 +26,7 @@ BACKEND_PORT ?= 8000
 	frontend-dev frontend-lint frontend-test \
 	backend-test backend-lint test lint \
 	fmt validate clean \
+	sagent sagent-down \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
@@ -37,6 +40,7 @@ help:
 	@printf "  make playground      Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend   Run FastAPI backend (:$(BACKEND_PORT))\n"
 	@printf "  make dev             Start dockerized dev stack (api+web+redis)\n"
+	@printf "  make sagent          Build + run AG-UI Copilot stack via Docker\n"
 	@printf "  make frontend-dev    Run Next.js dev server (:3000)\n"
 	@printf "  make lint/test       Lint or test backend + frontend\n"
 	@printf "  make data-ingestion  Submit RAG ingestion pipeline\n"
@@ -143,6 +147,13 @@ dev-health:
 		printf "  web:   healthy\n"; \
 	}
 
+sagent:
+	@set -a && source .env && $(SAGENT_COMPOSE) up -d --build
+	@printf "\nSagent stack online:\n  CopilotKit UI  -> http://localhost:3000\n  ADK Backend    -> http://localhost:8000\n"
+
+sagent-down:
+	@set -a && source .env && $(SAGENT_COMPOSE) down
+
 # ==============================================================================
 # Frontend workflows (Next.js)
 # ==============================================================================
@@ -154,7 +165,7 @@ frontend-lint:
 	@cd $(FRONTEND_DIR) && npm run lint
 
 frontend-test:
-	@cd $(FRONTEND_DIR) && npm run test:e2e
+	@cd $(FRONTEND_DIR) && npm run test
 
 # ==============================================================================
 # Quality gates
