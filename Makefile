@@ -23,8 +23,8 @@ BACKEND_PORT ?= 8000
 	help install bootstrap \
 	playground local-backend backend deploy setup-dev-env data-ingestion \
 	dev dev-up dev-down dev-logs dev-restart dev-health \
-	frontend-dev frontend-lint frontend-test \
-	backend-test backend-lint test lint \
+	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
+	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
 	$(TERRAFORM_ENVS) \
@@ -39,9 +39,10 @@ help:
 	@printf "  make install         Install uv deps + frontend packages\n"
 	@printf "  make playground      Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend   Run FastAPI backend (:$(BACKEND_PORT))\n"
-	@printf "  make dev             Start dockerized dev stack (api+web+redis)\n"
+	@printf "  make dev             Start dockerised dev stack (api+web+redis)\n"
 	@printf "  make sagent          Build + run AG-UI Copilot stack via Docker\n"
 	@printf "  make frontend-dev    Run Next.js dev server (:3000)\n"
+	@printf "  make check           Run full test suite (lint+typecheck+test+build)\n"
 	@printf "  make lint/test       Lint or test backend + frontend\n"
 	@printf "  make data-ingestion  Submit RAG ingestion pipeline\n"
 	@printf "  make staging|prod    Terraform init→plan→apply→output for env\n"
@@ -199,6 +200,12 @@ sagent-status:
 frontend-dev:
 	@cd $(FRONTEND_DIR) && npm run dev
 
+frontend-build:
+	@cd $(FRONTEND_DIR) && npm run build
+
+frontend-typecheck:
+	@cd $(FRONTEND_DIR) && npm run typecheck
+
 frontend-lint:
 	@cd $(FRONTEND_DIR) && npm run lint
 
@@ -224,6 +231,35 @@ backend-lint:
 test: backend-test frontend-test
 
 lint: backend-lint frontend-lint
+
+# Full CI pipeline - runs all checks in proper order
+check: ci
+
+ci:
+	@printf "\n════════════════════════════════════════════════════════════════\n"
+	@printf "  🔍 Running Full Test Suite\n"
+	@printf "════════════════════════════════════════════════════════════════\n\n"
+	@printf "  1️⃣  Backend Linting...\n\n"
+	@$(MAKE) backend-lint
+	@printf "\n  ✅ Backend linting passed\n\n"
+	@printf "  2️⃣  Backend Testing...\n\n"
+	@$(MAKE) backend-test
+	@printf "\n  ✅ Backend tests passed\n\n"
+	@printf "  3️⃣  Frontend Type Checking...\n\n"
+	@$(MAKE) frontend-typecheck
+	@printf "\n  ✅ Frontend type checking passed\n\n"
+	@printf "  4️⃣  Frontend Linting...\n\n"
+	@$(MAKE) frontend-lint
+	@printf "\n  ✅ Frontend linting passed\n\n"
+	@printf "  5️⃣  Frontend Testing...\n\n"
+	@$(MAKE) frontend-test
+	@printf "\n  ✅ Frontend tests passed\n\n"
+	@printf "  6️⃣  Frontend Build...\n\n"
+	@$(MAKE) frontend-build
+	@printf "\n  ✅ Frontend build passed\n\n"
+	@printf "════════════════════════════════════════════════════════════════\n"
+	@printf "  ✨ All checks passed successfully!\n"
+	@printf "════════════════════════════════════════════════════════════════\n\n"
 
 # ==============================================================================
 # Terraform automation
