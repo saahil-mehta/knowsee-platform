@@ -13,7 +13,7 @@ DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
 SAGENT_COMPOSE_FILE := dev/docker-compose.sagent.yml
 SAGENT_COMPOSE := docker compose -f $(SAGENT_COMPOSE_FILE)
 TERRAFORM_ROOT := terraform
-TERRAFORM_ENVS := staging prod
+TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
 PLAYGROUND_PORT ?= 8501
 BACKEND_HOST ?= localhost
@@ -21,8 +21,8 @@ BACKEND_PORT ?= 8000
 
 .PHONY: \
 	help install bootstrap \
-	playground local-backend backend deploy setup-dev-env data-ingestion \
-	dev dev-up dev-down dev-logs dev-restart dev-health \
+	playground local-backend backend deploy data-ingestion \
+	dev-local dev-local-up dev-local-down dev-local-logs dev-local-restart dev-local-health \
 	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
@@ -36,17 +36,26 @@ BACKEND_PORT ?= 8000
 
 help:
 	@printf "\nKnowsee Platform Toolkit\n"
-	@printf "  make install         Install uv deps + frontend packages\n"
-	@printf "  make playground      Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
-	@printf "  make local-backend   Run FastAPI backend (:$(BACKEND_PORT))\n"
-	@printf "  make dev             Start dockerised dev stack (api+web+redis)\n"
-	@printf "  make sagent          Build + run AG-UI Copilot stack via Docker\n"
-	@printf "  make frontend-dev    Run Next.js dev server (:3000)\n"
-	@printf "  make check           Run full test suite (lint+typecheck+test+build)\n"
-	@printf "  make lint/test       Lint or test backend + frontend\n"
-	@printf "  make data-ingestion  Submit RAG ingestion pipeline\n"
-	@printf "  make staging|prod    Terraform init→plan→apply→output for env\n"
-	@printf "  make fmt|validate    Terraform formatting / validation\n"
+	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	@printf "Development:\n"
+	@printf "  make install           Install uv deps + frontend packages\n"
+	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
+	@printf "  make local-backend     Run FastAPI backend (:$(BACKEND_PORT))\n"
+	@printf "  make dev-local         Start local Docker stack (api+web+redis)\n"
+	@printf "  make sagent            Build + run AG-UI Copilot stack (Docker)\n"
+	@printf "\n"
+	@printf "Cloud Environments (Terraform):\n"
+	@printf "  make cicd              Deploy CICD infrastructure\n"
+	@printf "  make dev               Deploy dev cloud environment\n"
+	@printf "  make staging           Deploy staging environment\n"
+	@printf "  make prod              Deploy production environment\n"
+	@printf "\n"
+	@printf "Utilities:\n"
+	@printf "  make check             Run full test suite (lint+typecheck+test+build)\n"
+	@printf "  make lint / make test  Lint or test backend + frontend\n"
+	@printf "  make data-ingestion    Submit RAG ingestion pipeline\n"
+	@printf "  make fmt / validate    Terraform formatting / validation\n"
+	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
 # ==============================================================================
 # Setup
@@ -96,10 +105,6 @@ deploy:
 		$$(if $$(IAP),--iap) \
 		$$(if $$(PORT),--port=$$(PORT))
 
-setup-dev-env:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	(cd deployment/terraform/dev && terraform init && terraform apply --var-file vars/env.tfvars --var dev_project_id=$$PROJECT_ID --auto-approve)
-
 data-ingestion:
 	PROJECT_ID=$$(gcloud config get-value project) && \
 	(cd data_ingestion && uv run data_ingestion_pipeline/submit_pipeline.py \
@@ -112,28 +117,28 @@ data-ingestion:
 		--pipeline-name="data-ingestion-pipeline")
 
 # ==============================================================================
-# Dockerized dev stack
+# Local Docker development stack
 # ==============================================================================
 
-dev: dev-up dev-health
-	@printf "\nServices ready:\n"
+dev-local: dev-local-up dev-local-health
+	@printf "\nLocal dev services ready:\n"
 	@printf "  Frontend: http://localhost:3000\n"
 	@printf "  API:      http://localhost:8000\n\n"
 
-dev-up:
+dev-local-up:
 	@$(DOCKER_COMPOSE) up -d --build
 
-dev-down:
+dev-local-down:
 	@$(DOCKER_COMPOSE) down
 
-dev-logs:
+dev-local-logs:
 	@$(DOCKER_COMPOSE) logs -f
 
-dev-restart:
+dev-local-restart:
 	@$(DOCKER_COMPOSE) restart
 
-dev-health:
-	@printf "Checking services...\n"
+dev-local-health:
+	@printf "Checking local services...\n"
 	@curl -fsS --max-time 5 http://localhost:8000/health >/dev/null && printf "  api:   healthy\n" || printf "  api:   unavailable\n"
 	@{ \
 		attempt=0; \
