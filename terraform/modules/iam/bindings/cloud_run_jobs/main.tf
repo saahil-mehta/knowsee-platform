@@ -8,7 +8,7 @@ resource "google_cloud_run_v2_job_iam_member" "bindings" {
 
   project  = var.project_id
   location = var.location
-  name     = var.resource_id  # This is the Cloud Run Job name
+  name     = var.resource_id # This is the Cloud Run Job name
   role     = each.value.role
   member   = each.value.member
 }

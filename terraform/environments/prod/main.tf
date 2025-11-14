@@ -1,110 +1,202 @@
-# Main terraform configuration for prod environment
-# This file orchestrates the infrastructure modules using shared templates
-
-locals {
-  # Create resource name prefix
-  name_prefix = "${var.project_id}-${var.environment}"
-
-  # Merge environment labels with resource-specific labels
-  common_labels = merge(
-    var.labels,
-    {
-      environment = var.environment
-      managed_by  = "terraform"
-    }
-  )
+terraform {
+  required_version = ">= 1.6"
 }
 
-# Enable required GCP APIs
+# Data source for project information
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
+# ==============================================================================
+# Enabled Services
+# ==============================================================================
+
+module "required_apis" {
+  source = "./infra/enabled_services"
+}
+
 module "enabled_services" {
   source = "../../modules/enabled_services"
 
-  count = length(var.enable_apis) > 0 ? 1 : 0
-
-  project_id = var.project_id
-  services   = var.enable_apis
+  project_id       = var.project_id
+  enabled_services = module.required_apis.required_apis
 }
 
+# ==============================================================================
 # Service Accounts
-module "service_accounts" {
-  source = "../../modules/iam/service_accounts"
+# ==============================================================================
 
-  for_each = var.service_accounts
+module "gcp_service_accounts" {
+  source = "./infra/service_accounts"
 
   project_id   = var.project_id
-  account_id   = each.key
+  project_name = var.project_name
+}
+
+module "service_accounts" {
+  source   = "../../modules/iam/service_accounts"
+  for_each = module.gcp_service_accounts.service_accounts
+
+  account_id   = each.value.account_id
   display_name = each.value.display_name
   description  = each.value.description
+  project_id   = each.value.project_id
 
   depends_on = [module.enabled_services]
 }
 
+# Grant IAM roles to service accounts
+resource "google_project_iam_member" "service_account_roles" {
+  for_each = merge([
+    for sa_key, sa in module.gcp_service_accounts.service_accounts : {
+      for role in sa.roles :
+      "${sa_key}-${role}" => {
+        service_account = module.service_accounts[sa_key].email
+        role            = role
+      }
+    }
+  ]...)
+
+  project = var.project_id
+  role    = each.value.role
+  member  = "serviceAccount:${each.value.service_account}"
+
+  depends_on = [module.service_accounts]
+}
+
+# ==============================================================================
 # Storage Buckets
+# ==============================================================================
+
+module "storage_infra" {
+  source = "./infra/storage"
+
+  project_id   = var.project_id
+  project_name = var.project_name
+  region       = var.region
+}
+
 module "storage_buckets" {
-  source = "../../modules/cloud_storage/buckets"
+  source   = "../../modules/cloud_storage/buckets"
+  for_each = module.storage_infra.storage_buckets
 
-  for_each = var.storage_buckets
-
-  project_id    = var.project_id
-  name          = each.key
+  name          = each.value.name
   location      = each.value.location
-  storage_class = each.value.storage_class
+  project       = var.project_id
+  force_destroy = each.value.force_destroy
 
   versioning = {
     enabled = each.value.versioning
   }
 
-  labels = local.common_labels
+  labels = var.labels
 
   depends_on = [module.enabled_services]
 }
 
-# BigQuery Datasets
-module "bigquery_datasets" {
-  source = "../../modules/bigquery/datasets"
+# ==============================================================================
+# Discovery Engine (Vertex AI Search)
+# ==============================================================================
 
-  for_each = var.bigquery_datasets
+module "discovery_engine_infra" {
+  source = "./infra/discovery_engine"
+
+  project_name      = var.project_name
+  data_store_region = var.data_store_region
+}
+
+module "discovery_engine" {
+  source = "../../modules/discovery_engine"
 
   project_id                  = var.project_id
-  dataset_id                  = each.key
-  location                    = each.value.location
-  delete_contents_on_destroy  = each.value.delete_contents_on_destroy
-  default_table_expiration_ms = each.value.default_table_expiration_ms
-
-  labels = local.common_labels
+  data_store_id               = module.discovery_engine_infra.discovery_engine_config.datastore.data_store_id
+  display_name                = module.discovery_engine_infra.discovery_engine_config.datastore.display_name
+  location                    = module.discovery_engine_infra.discovery_engine_config.datastore.location
+  industry_vertical           = module.discovery_engine_infra.discovery_engine_config.datastore.industry_vertical
+  content_config              = module.discovery_engine_infra.discovery_engine_config.datastore.content_config
+  solution_types              = module.discovery_engine_infra.discovery_engine_config.datastore.solution_types
+  create_advanced_site_search = module.discovery_engine_infra.discovery_engine_config.datastore.create_advanced_site_search
+  create_search_engine        = module.discovery_engine_infra.discovery_engine_config.datastore.create_search_engine
+  search_engine_id            = module.discovery_engine_infra.discovery_engine_config.datastore.search_engine_id
+  search_engine_display_name  = module.discovery_engine_infra.discovery_engine_config.datastore.search_engine_display_name
+  search_tier                 = module.discovery_engine_infra.discovery_engine_config.datastore.search_tier
 
   depends_on = [module.enabled_services]
 }
 
-##############################################################################
-# Shared Infrastructure Templates
-# Uncomment and customize as needed from ../../infra/, ../../permissions/, ../../resources/
-##############################################################################
+# ==============================================================================
+# Log Sinks
+# ==============================================================================
 
-# Example: Custom IAM roles
-# module "custom_roles_definition" {
-#   source = "../../infra/custom_roles"
-# }
+module "log_sinks_infra" {
+  source = "./infra/log_sinks"
 
-# Example: Project-level permissions
-# module "project_permissions" {
-#   source = "../../permissions/project"
-# }
+  project_name = var.project_name
+  region       = var.region
+}
 
-# Additional infrastructure can be added by referencing the shared templates:
-# - ../../infra/artifact_repositories/
-# - ../../infra/bigquery/
-# - ../../infra/buckets/
-# - ../../infra/cloud_functions/
-# - ../../infra/cloud_run/
-# - ../../infra/cloud_scheduler/
-# - ../../infra/composer/
-# - ../../infra/compute/
-# - ../../infra/datastreams/
-# - ../../infra/monitoring/
-# - ../../infra/pub_sub/
-# - ../../infra/secrets/
-# - ../../permissions/bigquery/
-# - ../../permissions/buckets/
-# - ../../permissions/cloud_run_jobs/
-# - ../../permissions/groups/
+module "log_sinks" {
+  source   = "../../modules/log_sink"
+  for_each = module.log_sinks_infra.log_sinks
+
+  project_id            = var.project_id
+  sink_name             = each.value.sink_name
+  dataset_id            = each.value.dataset_id
+  dataset_friendly_name = each.value.dataset_friendly_name
+  location              = each.value.location
+  filter                = each.value.filter
+
+  depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
+# Cloud Run Services
+# ==============================================================================
+
+module "cloud_run_infra" {
+  source = "./infra/cloud_run"
+
+  project_name      = var.project_name
+  region            = var.region
+  data_store_region = var.data_store_region
+}
+
+# Get dynamic data store ID from module output
+locals {
+  service_account_map = {
+    for key, sa in module.service_accounts :
+    key => sa.email
+  }
+}
+
+module "cloud_run_services" {
+  source   = "../../modules/cloud_run_service"
+  for_each = module.cloud_run_infra.cloud_run_services
+
+  project_id                       = var.project_id
+  name                             = each.value.name
+  location                         = each.value.location
+  image                            = each.value.image
+  cpu                              = each.value.cpu
+  memory                           = each.value.memory
+  cpu_idle                         = each.value.cpu_idle
+  min_instance_count               = each.value.min_instance_count
+  max_instance_count               = each.value.max_instance_count
+  max_instance_request_concurrency = each.value.max_instance_request_concurrency
+  session_affinity                 = each.value.session_affinity
+  service_account_email            = local.service_account_map[each.value.service_account_key]
+  labels                           = merge(var.labels, each.value.labels)
+
+  # Replace DATA_STORE_ID placeholder with actual value
+  env_vars = [
+    for env in each.value.env_vars :
+    {
+      name  = env.name
+      value = env.name == "DATA_STORE_ID" ? module.discovery_engine.data_store_id : env.value
+    }
+  ]
+
+  secret_env_vars = each.value.secret_env_vars
+
+  depends_on = [module.enabled_services, module.service_accounts, module.discovery_engine]
+}

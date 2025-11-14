@@ -3,8 +3,8 @@ resource "google_cloud_run_v2_job" "job" {
   location = var.location
 
   template {
-      task_count   = var.task_count
-      parallelism  = var.parallelism
+    task_count  = var.task_count
+    parallelism = var.parallelism
     template {
       timeout = var.timeout
       containers {
@@ -38,5 +38,5 @@ resource "google_cloud_run_v2_job" "job" {
       }
     }
   }
-  deletion_protection=false
+  deletion_protection = false
 }
