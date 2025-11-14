@@ -85,8 +85,8 @@ disable_error_code = ["misc", "no-untyped-call", "no-any-return"]
 exclude = [".venv"]
 
 [tool.codespell]
-ignore-words-list = "rouge"
-skip = "./locust_env/*,uv.lock,.venv,./frontend,**/*.ipynb"
+ignore-words-list = "rouge,devlop,trough"
+skip = "./locust_env/*,uv.lock,.venv,./frontend,./dev,**/*.ipynb"
 
 
 [build-system]
