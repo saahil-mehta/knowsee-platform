@@ -33,13 +33,8 @@ from google.genai import types
 
 from app.agent import create_agent
 
-# Skip integration tests that call real Gemini LLM
-# These tests work with the factory pattern but still require Gemini API access
-# To run these tests, ensure GCP credentials are configured
-pytestmark = pytest.mark.skipif(
-    True,  # Always skip for now - requires real Gemini API
-    reason="Integration tests require Gemini API access and will be enabled when CI has credentials",
-)
+# Integration tests using mocked Gemini LLM
+# These tests use the mocked services from conftest.py to run without GCP credentials
 
 
 # ==============================================================================
