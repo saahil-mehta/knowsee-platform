@@ -10,6 +10,8 @@ SHELL := /bin/bash
 FRONTEND_DIR := frontend
 COMPOSE_FILE := dev/docker-compose.yml
 DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
+SAGENT_COMPOSE_FILE := dev/docker-compose.sagent.yml
+SAGENT_COMPOSE := docker compose -f $(SAGENT_COMPOSE_FILE)
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -21,9 +23,10 @@ BACKEND_PORT ?= 8000
 	help install bootstrap \
 	playground local-backend backend deploy setup-dev-env data-ingestion \
 	dev dev-up dev-down dev-logs dev-restart dev-health \
-	frontend-dev frontend-lint frontend-test \
-	backend-test backend-lint test lint \
+	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
+	backend-test backend-lint test lint check ci \
 	fmt validate clean \
+	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
@@ -36,8 +39,10 @@ help:
 	@printf "  make install         Install uv deps + frontend packages\n"
 	@printf "  make playground      Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend   Run FastAPI backend (:$(BACKEND_PORT))\n"
-	@printf "  make dev             Start dockerized dev stack (api+web+redis)\n"
+	@printf "  make dev             Start dockerised dev stack (api+web+redis)\n"
+	@printf "  make sagent          Build + run AG-UI Copilot stack via Docker\n"
 	@printf "  make frontend-dev    Run Next.js dev server (:3000)\n"
+	@printf "  make check           Run full test suite (lint+typecheck+test+build)\n"
 	@printf "  make lint/test       Lint or test backend + frontend\n"
 	@printf "  make data-ingestion  Submit RAG ingestion pipeline\n"
 	@printf "  make staging|prod    Terraform init→plan→apply→output for env\n"
@@ -143,6 +148,51 @@ dev-health:
 		printf "  web:   healthy\n"; \
 	}
 
+sagent:
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🚀 Building Sagent Stack (ADK + AG-UI + CopilotKit)"
+	@echo "════════════════════════════════════════════════════════════════"
+	@set -a && source .env && $(SAGENT_COMPOSE) up -d --build
+	@echo ""
+	@echo "✅ Sagent stack is starting..."
+	@echo ""
+	@echo "   📍 Services:"
+	@echo "      • CopilotKit UI  → http://localhost:3000"
+	@echo "      • ADK Backend    → http://localhost:8000"
+	@echo ""
+	@echo "   📊 Monitor real-time logs:"
+	@echo "      • All services:   make sagent-logs"
+	@echo "      • Frontend only:  make sagent-logs-frontend"
+	@echo "      • Backend only:   make sagent-logs-backend"
+	@echo ""
+	@echo "   ⏳ Waiting for services to be healthy..."
+	@sleep 5
+	@echo ""
+	@$(SAGENT_COMPOSE) ps
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  ✨ Stack ready! Check logs above for any issues."
+	@echo "════════════════════════════════════════════════════════════════"
+
+sagent-down:
+	@set -a && source .env && $(SAGENT_COMPOSE) down
+
+sagent-logs:
+	@echo "📊 Streaming logs from all Sagent services (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f
+
+sagent-logs-frontend:
+	@echo "📊 Streaming frontend logs (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f sagent-frontend
+
+sagent-logs-backend:
+	@echo "📊 Streaming backend logs (Ctrl+C to exit)..."
+	@$(SAGENT_COMPOSE) logs -f sagent-backend
+
+sagent-status:
+	@echo "📊 Sagent service status:"
+	@$(SAGENT_COMPOSE) ps
+
 # ==============================================================================
 # Frontend workflows (Next.js)
 # ==============================================================================
@@ -150,11 +200,17 @@ dev-health:
 frontend-dev:
 	@cd $(FRONTEND_DIR) && npm run dev
 
+frontend-build:
+	@cd $(FRONTEND_DIR) && npm run build
+
+frontend-typecheck:
+	@cd $(FRONTEND_DIR) && npm run typecheck
+
 frontend-lint:
 	@cd $(FRONTEND_DIR) && npm run lint
 
 frontend-test:
-	@cd $(FRONTEND_DIR) && npm run test:e2e
+	@cd $(FRONTEND_DIR) && npm run test
 
 # ==============================================================================
 # Quality gates
@@ -175,6 +231,35 @@ backend-lint:
 test: backend-test frontend-test
 
 lint: backend-lint frontend-lint
+
+# Full CI pipeline - runs all checks in proper order
+check: ci
+
+ci:
+	@printf "\n════════════════════════════════════════════════════════════════\n"
+	@printf "  🔍 Running Full Test Suite\n"
+	@printf "════════════════════════════════════════════════════════════════\n\n"
+	@printf "  1️⃣  Backend Linting...\n\n"
+	@$(MAKE) backend-lint
+	@printf "\n  ✅ Backend linting passed\n\n"
+	@printf "  2️⃣  Backend Testing...\n\n"
+	@$(MAKE) backend-test
+	@printf "\n  ✅ Backend tests passed\n\n"
+	@printf "  3️⃣  Frontend Type Checking...\n\n"
+	@$(MAKE) frontend-typecheck
+	@printf "\n  ✅ Frontend type checking passed\n\n"
+	@printf "  4️⃣  Frontend Linting...\n\n"
+	@$(MAKE) frontend-lint
+	@printf "\n  ✅ Frontend linting passed\n\n"
+	@printf "  5️⃣  Frontend Testing...\n\n"
+	@$(MAKE) frontend-test
+	@printf "\n  ✅ Frontend tests passed\n\n"
+	@printf "  6️⃣  Frontend Build...\n\n"
+	@$(MAKE) frontend-build
+	@printf "\n  ✅ Frontend build passed\n\n"
+	@printf "════════════════════════════════════════════════════════════════\n"
+	@printf "  ✨ All checks passed successfully!\n"
+	@printf "════════════════════════════════════════════════════════════════\n\n"
 
 # ==============================================================================
 # Terraform automation
