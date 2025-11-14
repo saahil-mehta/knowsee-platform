@@ -201,3 +201,6 @@ tools/a2a-inspector/
 
 # Vercel Reference
 /dev/vercel-ai-chatbot
+
+# Cache for frontend
+frontend/tsconfig.tsbuildinfo
