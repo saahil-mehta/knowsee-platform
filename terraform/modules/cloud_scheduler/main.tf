@@ -3,7 +3,7 @@ resource "google_cloud_scheduler_job" "job" {
   description = var.description
   schedule    = var.schedule
   time_zone   = var.time_zone
-  project = var.project
+  project     = var.project
 
   http_target {
     http_method = var.http_method

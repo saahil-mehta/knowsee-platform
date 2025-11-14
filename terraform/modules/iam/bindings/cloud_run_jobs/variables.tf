@@ -9,7 +9,7 @@ variable "location" {
 }
 
 variable "resource_id" {
-  type = string
+  type        = string
   description = "Cloud Run Job name"
 }
 

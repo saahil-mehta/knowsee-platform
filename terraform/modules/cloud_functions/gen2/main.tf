@@ -34,13 +34,13 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
-    available_memory    = "${var.available_memory_mb}Mi"
-    available_cpu       = var.available_cpu
-    timeout_seconds     = var.timeout
-    max_instance_count  = var.max_instance_count
+    available_memory                 = "${var.available_memory_mb}Mi"
+    available_cpu                    = var.available_cpu
+    timeout_seconds                  = var.timeout
+    max_instance_count               = var.max_instance_count
     max_instance_request_concurrency = var.max_instance_request_concurrency
-    ingress_settings    = var.ingress_settings
-    service_account_email = var.service_account_email
+    ingress_settings                 = var.ingress_settings
+    service_account_email            = var.service_account_email
 
     environment_variables = var.environment_variables
 
@@ -58,7 +58,7 @@ resource "google_cloudfunctions2_function" "function" {
   dynamic "event_trigger" {
     for_each = var.event_trigger != null ? [var.event_trigger] : []
     content {
-      event_type = event_trigger.value.event_type
+      event_type   = event_trigger.value.event_type
       retry_policy = event_trigger.value.retry_policy
     }
   }
