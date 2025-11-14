@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Iterable
+from typing import Any
 
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from fastapi import FastAPI
@@ -18,7 +18,7 @@ AGUI_APP_NAME = os.getenv("AGUI_APP_NAME", "knowsee_copilot")
 AGUI_DEFAULT_USER = os.getenv("AGUI_DEFAULT_USER", "web-user")
 AGUI_SESSION_TIMEOUT = int(os.getenv("AGUI_SESSION_TIMEOUT", "3600"))
 
-AGUI_AGENT_TOOLS: Iterable = (retrieve_docs,)
+AGUI_AGENT_TOOLS: tuple[Any, ...] = (retrieve_docs,)
 
 
 def _build_instruction() -> str:
