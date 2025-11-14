@@ -91,11 +91,35 @@ Answer to the best of your ability using the context provided.
 Leverage the Tools you are provided to answer questions.
 If you already know the answer to a question, you can respond directly without using the tools."""
 
-root_agent = Agent(
-    name="root_agent",
-    model="gemini-2.0-flash",
-    instruction=instruction,
-    tools=[retrieve_docs],
-)
+
+def create_agent(tools: list | None = None) -> Agent:
+    """
+    Factory function to create an agent with injectable tools.
+
+    This pattern allows tests to inject mocked tools whilst production code
+    uses the default retrieve_docs implementation. Without this factory,
+    patching module-level functions doesn't affect already-instantiated agents
+    since Python captures function references at instantiation time.
+
+    Args:
+        tools: List of tool functions to provide to the agent.
+               If None, uses default production tools [retrieve_docs].
+
+    Returns:
+        Agent: Configured agent instance with specified tools.
+    """
+    if tools is None:
+        tools = [retrieve_docs]
+
+    return Agent(
+        name="root_agent",
+        model="gemini-2.0-flash",
+        instruction=instruction,
+        tools=tools,
+    )
+
+
+# Production agent instance with default tools
+root_agent = create_agent()
 
 app = App(root_agent=root_agent, name="app")
