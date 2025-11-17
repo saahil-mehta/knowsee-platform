@@ -19,6 +19,33 @@ PLAYGROUND_PORT ?= 8501
 BACKEND_HOST ?= localhost
 BACKEND_PORT ?= 8000
 
+# ==============================================================================
+# ASCII Branding Macros
+# ==============================================================================
+
+define KNOWSEE_LOGO
+	@printf "\n"
+	@printf "  ██╗  ██╗███╗   ██╗ ██████╗ ██╗    ██╗███████╗███████╗███████╗\n"
+	@printf "  ██║ ██╔╝████╗  ██║██╔═══██╗██║    ██║██╔════╝██╔════╝██╔════╝\n"
+	@printf "  █████╔╝ ██╔██╗ ██║██║   ██║██║ █╗ ██║███████╗█████╗  █████╗  \n"
+	@printf "  ██╔═██╗ ██║╚██╗██║██║   ██║██║███╗██║╚════██║██╔══╝  ██╔══╝  \n"
+	@printf "  ██║  ██╗██║ ╚████║╚██████╔╝╚███╔███╔╝███████║███████╗███████╗\n"
+	@printf "  ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚══════╝╚══════╝\n"
+	@printf "\n"
+endef
+
+define SEPARATOR
+	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+endef
+
+# Usage: $(call PRINT_HEADER,Title)
+define PRINT_HEADER
+	$(KNOWSEE_LOGO)
+	@printf "  $(1)\n"
+	$(SEPARATOR)
+	@printf "\n"
+endef
+
 .PHONY: \
 	help install bootstrap \
 	playground local-backend backend deploy data-ingestion \
@@ -27,6 +54,7 @@ BACKEND_PORT ?= 8000
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
+	gcp-switch gcp-status gcp-setup \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
@@ -35,8 +63,7 @@ BACKEND_PORT ?= 8000
 	$(addsuffix -destroy,$(TERRAFORM_ENVS))
 
 help:
-	@printf "\nKnowsee Platform Toolkit\n"
-	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	$(call PRINT_HEADER,Platform Toolkit)
 	@printf "Development:\n"
 	@printf "  make install           Install uv deps + frontend packages\n"
 	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
@@ -49,6 +76,11 @@ help:
 	@printf "  make dev               Deploy dev cloud environment\n"
 	@printf "  make staging           Deploy staging environment\n"
 	@printf "  make prod              Deploy production environment\n"
+	@printf "\n"
+	@printf "GCP Profile Management:\n"
+	@printf "  make gcp-switch PROFILE=<name>  Switch GCP profile and update .env\n"
+	@printf "  make gcp-status                 Show current GCP profile and project\n"
+	@printf "  make gcp-setup                  Get started with GCP (if not configured)\n"
 	@printf "\n"
 	@printf "Utilities:\n"
 	@printf "  make check             Run full test suite (lint+typecheck+test+build)\n"
@@ -74,14 +106,52 @@ bootstrap:
 	@cd $(FRONTEND_DIR) && npm run bootstrap
 
 # ==============================================================================
+# GCP Profile Management
+# ==============================================================================
+
+gcp-switch:
+	@if [ -z "$(PROFILE)" ]; then \
+		echo ""; \
+		echo "Error: PROFILE not specified"; \
+		echo ""; \
+		echo "Usage: make gcp-switch PROFILE=<profile-name>"; \
+		echo ""; \
+		echo "Available profiles:"; \
+		gcloud config configurations list 2>/dev/null || echo "  (gcloud not configured)"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@./scripts/switch-gcp-profile.sh $(PROFILE)
+
+gcp-setup:
+	@./scripts/switch-gcp-profile.sh
+
+gcp-status:
+	$(call PRINT_HEADER,GCP Configuration Status)
+	@printf "gcloud active profile:\n"
+	@gcloud config configurations list | grep True || echo "  No active configuration"
+	@printf "\nGCP project (from gcloud):\n"
+	@printf "  %s\n" "$$(gcloud config get-value project 2>/dev/null || echo 'Not set')"
+	@printf "\nGCP project (from .env):\n"
+	@if [ -f .env ]; then \
+		grep "^GOOGLE_CLOUD_PROJECT=" .env | cut -d'=' -f2 || echo "  Not set in .env"; \
+	else \
+		echo "  .env file not found"; \
+	fi
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "\n"
+
+# ==============================================================================
 # Backend (ADK agent) workflows
 # ==============================================================================
 
 playground:
-	@echo "==============================================================================="
-	@echo "| 🚀 Starting your agent playground...                                        |"
-	@echo "| 🔍 IMPORTANT: Select the 'app' folder to interact with your agent.          |"
-	@echo "==============================================================================="
+	$(call PRINT_HEADER,Agent Playground)
+	@printf "  Starting your agent playground...\n"
+	@printf "  IMPORTANT: Select the 'app' folder to interact with your agent.\n"
+	$(SEPARATOR)
+	@printf "\n"
 	uv run adk web . --port $(PLAYGROUND_PORT) --reload_agents
 
 local-backend:
@@ -121,9 +191,11 @@ data-ingestion:
 # ==============================================================================
 
 dev-local: dev-local-up dev-local-health
-	@printf "\nLocal dev services ready:\n"
+	$(call PRINT_HEADER,Local Development Services Ready)
 	@printf "  Frontend: http://localhost:3000\n"
-	@printf "  API:      http://localhost:8000\n\n"
+	@printf "  API:      http://localhost:8000\n"
+	$(SEPARATOR)
+	@printf "\n"
 
 dev-local-up:
 	@$(DOCKER_COMPOSE) up -d --build
@@ -154,9 +226,7 @@ dev-local-health:
 	}
 
 sagent:
-	@echo "════════════════════════════════════════════════════════════════"
-	@echo "  🚀 Building Sagent Stack (ADK + AG-UI + CopilotKit)"
-	@echo "════════════════════════════════════════════════════════════════"
+	$(call PRINT_HEADER,Sagent Stack (ADK + AG-UI + CopilotKit))
 	@set -a && source .env && $(SAGENT_COMPOSE) up -d --build
 	@echo ""
 	@echo "✅ Sagent stack is starting..."
@@ -174,10 +244,11 @@ sagent:
 	@sleep 5
 	@echo ""
 	@$(SAGENT_COMPOSE) ps
-	@echo ""
-	@echo "════════════════════════════════════════════════════════════════"
-	@echo "  ✨ Stack ready! Check logs above for any issues."
-	@echo "════════════════════════════════════════════════════════════════"
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  ✨ Stack ready! Check logs above for any issues.\n"
+	$(SEPARATOR)
+	@printf "\n"
 
 sagent-down:
 	@set -a && source .env && $(SAGENT_COMPOSE) down
@@ -241,9 +312,7 @@ lint: backend-lint frontend-lint
 check: ci
 
 ci:
-	@printf "\n════════════════════════════════════════════════════════════════\n"
-	@printf "  🔍 Running Full Test Suite\n"
-	@printf "════════════════════════════════════════════════════════════════\n\n"
+	$(call PRINT_HEADER,Full Test Suite Running)
 	@printf "  1️⃣  Backend Linting...\n\n"
 	@$(MAKE) backend-lint
 	@printf "\n  ✅ Backend linting passed\n\n"
@@ -262,9 +331,10 @@ ci:
 	@printf "  6️⃣  Frontend Build...\n\n"
 	@$(MAKE) frontend-build
 	@printf "\n  ✅ Frontend build passed\n\n"
-	@printf "════════════════════════════════════════════════════════════════\n"
+	$(SEPARATOR)
 	@printf "  ✨ All checks passed successfully!\n"
-	@printf "════════════════════════════════════════════════════════════════\n\n"
+	$(SEPARATOR)
+	@printf "\n"
 
 # ==============================================================================
 # Terraform automation
