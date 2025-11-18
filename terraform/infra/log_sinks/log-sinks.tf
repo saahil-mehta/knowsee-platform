@@ -1,27 +1,31 @@
 # Shared log sinks configuration for dev/staging/prod environments
 
-output "log_sinks" {
-  description = "Log sinks configuration for BigQuery"
-  value = {
+locals {
+  log_sinks = {
     telemetry = {
-      sink_name             = "${var.project_name}_telemetry"
-      dataset_id            = replace("${var.project_name}_telemetry", "-", "_")
-      dataset_friendly_name = "${var.project_name}_telemetry"
+      sink_name             = "${var.resource_prefix}_${var.environment}_telemetry"
+      dataset_id            = "${var.resource_prefix}_${var.environment}_telemetry"
+      dataset_friendly_name = "${var.resource_prefix}_${var.environment}_telemetry"
       location              = var.region
-      filter                = "labels.service_name=\"${var.project_name}\" labels.type=\"agent_telemetry\""
+      filter                = "labels.service_name=\"${var.resource_prefix}-${var.environment}\" labels.type=\"agent_telemetry\""
     }
     feedback = {
-      sink_name             = "${var.project_name}_feedback"
-      dataset_id            = replace("${var.project_name}_feedback", "-", "_")
-      dataset_friendly_name = "${var.project_name}_feedback"
+      sink_name             = "${var.resource_prefix}_${var.environment}_feedback"
+      dataset_id            = "${var.resource_prefix}_${var.environment}_feedback"
+      dataset_friendly_name = "${var.resource_prefix}_${var.environment}_feedback"
       location              = var.region
       filter                = "jsonPayload.log_type=\"feedback\""
     }
   }
 }
 
-variable "project_name" {
-  description = "Project name for resource naming"
+variable "resource_prefix" {
+  description = "Prefix for resource naming"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
   type        = string
 }
 

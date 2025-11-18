@@ -29,8 +29,9 @@ module "enabled_services" {
 module "gcp_service_accounts" {
   source = "../../infra/service_accounts"
 
-  project_id   = var.project_id
-  project_name = var.project_name
+  project_id      = var.project_id
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
 }
 
 module "service_accounts" {
@@ -71,9 +72,8 @@ resource "google_project_iam_member" "service_account_roles" {
 module "storage_infra" {
   source = "../../infra/storage"
 
-  project_id   = var.project_id
-  project_name = var.project_name
-  region       = var.region
+  project_id = var.project_id
+  region     = var.region
 }
 
 module "storage_buckets" {
@@ -101,9 +101,9 @@ module "storage_buckets" {
 module "discovery_engine_infra" {
   source = "../../infra/discovery_engine"
 
-  project_name      = var.project_name
-  data_store_region = var.data_store_region
+  resource_prefix   = var.resource_prefix
   environment       = var.environment
+  data_store_region = var.data_store_region
 }
 
 module "discovery_engine" {
@@ -132,8 +132,9 @@ module "discovery_engine" {
 module "log_sinks_infra" {
   source = "../../infra/log_sinks"
 
-  project_name = var.project_name
-  region       = var.region
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
 }
 
 module "log_sinks" {
@@ -157,7 +158,8 @@ module "log_sinks" {
 module "cloud_run_infra" {
   source = "../../infra/cloud_run"
 
-  project_name      = var.project_name
+  resource_prefix   = var.resource_prefix
+  environment       = var.environment
   region            = var.region
   data_store_region = var.data_store_region
 }

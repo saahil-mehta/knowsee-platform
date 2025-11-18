@@ -1,10 +1,9 @@
 # Shared Cloud Run services configuration for dev/staging/prod environments
 
-output "cloud_run_services" {
-  description = "Cloud Run services for application environments"
-  value = {
+locals {
+  cloud_run_services = {
     backend = {
-      name                             = "${var.project_name}-backend"
+      name                             = "${var.resource_prefix}-${var.environment}-backend"
       location                         = var.region
       image                            = "us-docker.pkg.dev/cloudrun/container/hello"
       cpu                              = "4"
@@ -18,7 +17,7 @@ output "cloud_run_services" {
       env_vars = [
         {
           name  = "DATA_STORE_ID"
-          value = "${var.project_name}-datastore"
+          value = "${var.resource_prefix}-${var.environment}-datastore"
         },
         {
           name  = "DATA_STORE_REGION"
@@ -33,8 +32,13 @@ output "cloud_run_services" {
   }
 }
 
-variable "project_name" {
-  description = "Project name for resource naming"
+variable "resource_prefix" {
+  description = "Prefix for resource naming"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
   type        = string
 }
 

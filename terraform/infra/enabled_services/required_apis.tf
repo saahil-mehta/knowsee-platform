@@ -2,9 +2,8 @@
 # Note: cloudresourcemanager and serviceusage must be manually enabled before
 # running Terraform for the first time (bootstrap requirement)
 
-output "required_apis" {
-  description = "List of required GCP APIs for application environments"
-  value = [
+locals {
+  required_apis = [
     "aiplatform.googleapis.com",
     "bigquery.googleapis.com",
     "cloudresourcemanager.googleapis.com",

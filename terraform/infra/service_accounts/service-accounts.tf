@@ -1,11 +1,10 @@
 # Shared service accounts configuration for dev/staging/prod environments
 
-output "service_accounts" {
-  description = "Service accounts for application environments"
-  value = {
+locals {
+  service_accounts = {
     app = {
-      account_id   = "${var.project_name}-app"
-      display_name = "${var.project_name} Agent Service Account"
+      account_id   = "${var.resource_prefix}-${var.environment}-app"
+      display_name = "${var.resource_prefix} ${var.environment} Agent Service Account"
       description  = "Service account for running the ADK agent application"
       project_id   = var.project_id
       roles = [
@@ -18,8 +17,8 @@ output "service_accounts" {
       ]
     }
     vertexai_pipeline = {
-      account_id   = "${var.project_name}-rag"
-      display_name = "Vertex AI Pipeline Service Account"
+      account_id   = "${var.resource_prefix}-${var.environment}-rag"
+      display_name = "${var.resource_prefix} ${var.environment} Vertex AI Pipeline Service Account"
       description  = "Service account for Vertex AI data ingestion pipeline"
       project_id   = var.project_id
       roles = [
@@ -43,7 +42,12 @@ variable "project_id" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name for resource naming"
+variable "resource_prefix" {
+  description = "Prefix for resource naming"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
   type        = string
 }
