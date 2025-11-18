@@ -119,12 +119,16 @@ gcp-switch:
 		echo "Available profiles:"; \
 		gcloud config configurations list 2>/dev/null || echo "  (gcloud not configured)"; \
 		echo ""; \
+		echo "For more details, see: docs/GCP_PROFILE_MANAGEMENT.md"; \
+		echo ""; \
 		exit 1; \
 	fi
 	@./scripts/switch-gcp-profile.sh $(PROFILE)
+	@printf "\nFor more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
 
 gcp-setup:
 	@./scripts/switch-gcp-profile.sh
+	@printf "\nFor more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
 
 gcp-status:
 	$(call PRINT_HEADER,GCP Configuration Status)
@@ -138,7 +142,9 @@ gcp-status:
 	else \
 		echo "  .env file not found"; \
 	fi
-	@printf "\n"
+	@printf "\nAuthenticated accounts:\n"
+	@gcloud auth list 2>/dev/null || echo "  No authenticated accounts"
+	@printf "\nFor more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
 	$(SEPARATOR)
 	@printf "\n"
 
