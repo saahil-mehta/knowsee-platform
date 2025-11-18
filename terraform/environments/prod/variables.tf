@@ -8,10 +8,10 @@ variable "billing_project" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name used as a base for resource naming"
+variable "resource_prefix" {
+  description = "Prefix for resource naming"
   type        = string
-  default     = "sagent"
+  default     = "knowsee"
 }
 
 variable "region" {
