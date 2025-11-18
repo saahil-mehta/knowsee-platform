@@ -45,8 +45,32 @@ class ChatStreamUser(HttpUser):
             timeout=10,
         )
 
+        # Validate session creation succeeded before proceeding
+        if session_response.status_code != 201:
+            # Record failure metric separately
+            self.environment.events.request.fire(
+                request_type="POST",
+                name=f"{session_url} (session creation failed)",
+                response_time=0,
+                response_length=0,
+                exception=f"Session creation failed with status {session_response.status_code}",
+                context={},
+            )
+            return
+
         # Get session_id from response
-        session_id = session_response.json()["id"]
+        try:
+            session_id = session_response.json()["id"]
+        except (KeyError, ValueError) as e:
+            self.environment.events.request.fire(
+                request_type="POST",
+                name=f"{session_url} (invalid response)",
+                response_time=0,
+                response_length=0,
+                exception=f"Failed to parse session response: {e}",
+                context={},
+            )
+            return
 
         # Send chat message
         data = {

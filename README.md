@@ -101,11 +101,19 @@ knowsee-platform/
 
 **Note:** Frontend directory removed pending AG-UI + CopilotKit implementation. Use ADK's built-in dev-ui at `http://localhost:8000/dev-ui` for testing.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- **Complete GCP setup guide** (Knowsee project access, personal projects, multiple profiles)
+- Development workflow and best practices
+- Code quality guidelines
+- Pull request process
+
 ## Prerequisites
 - **Node.js 24+** (required for AG-UI + CopilotKit when implemented)
 - Python 3.11+ and [uv](https://docs.astral.sh/uv/getting-started/installation/) (auto-installed by `make install`)
 - Docker & Docker Compose v2
-- Google Cloud SDK (configured with the desired project)
+- Google Cloud SDK - see [CONTRIBUTING.md](CONTRIBUTING.md#gcp-profile-management) for setup
 - Terraform ≥ 1.6
 - Make, curl, and bash (default on macOS/Linux)
 
@@ -146,16 +154,20 @@ The polished chat interface will be implemented using AG-UI + CopilotKit. For no
 | `install` | Install uv if missing, sync Python deps |
 | `playground` | Launch ADK Streamlit playground on port 8501 |
 | `local-backend` | Start FastAPI locally with hot reload on `localhost:8000` |
-| `fs` | Start backend, wait for readiness (use when frontend is implemented) |
+| `dev-local` | Start local Docker stack (api + web + redis) |
+| `sagent` | Build and run Sagent stack (ADK + AG-UI + CopilotKit) |
 | `backend-lint` | Run codespell, Ruff, Mypy |
 | `backend-test` | Run unit + integration tests |
+| `check` / `ci` | Run full test suite (lint + typecheck + test + build) |
+| `gcp-switch PROFILE=<name>` | Switch GCP profile and update .env |
+| `gcp-status` | Show current GCP profile and project |
+| `gcp-setup` | Get started with GCP (setup help) |
 | `data-ingestion` | Submit the Vertex AI data ingestion pipeline |
-| `setup-dev-env` | Provision minimal dev infra via `deployment/terraform/dev` |
 | `deploy` | Deploy backend to Cloud Run |
 | `fmt`, `validate`, `clean` | Terraform hygiene commands |
 | `staging` / `prod` | Run `init → plan → apply → output` for each environment |
 
-Run `make help` anytime to see the full catalog.
+Run `make help` anytime to see the full catalogue.
 
 ## Development Workflows
 

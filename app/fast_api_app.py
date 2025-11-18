@@ -22,10 +22,10 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, export
 from vertexai import agent_engines
 
+from app.agui_adapter import register_agui
 from app.app_utils.gcs import create_bucket_if_not_exists
 from app.app_utils.tracing import CloudTraceLoggingSpanExporter
 from app.app_utils.typing import Feedback
-from app.agui_adapter import register_agui
 
 _, project_id = google.auth.default()
 logging_client = google_cloud_logging.Client()

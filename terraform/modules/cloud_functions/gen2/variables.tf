@@ -111,7 +111,7 @@ variable "secret_environment_variables" {
     secret     = string
     version    = string
   }))
-  default     = []
+  default = []
 }
 
 variable "event_trigger" {
@@ -138,6 +138,6 @@ variable "event_trigger" {
 }
 
 variable "labels" {
-  type        = map(string)
-  default     = {}
+  type    = map(string)
+  default = {}
 }

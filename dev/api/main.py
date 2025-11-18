@@ -7,13 +7,13 @@ import asyncio
 import json
 import os
 import time
-from typing import AsyncGenerator, List, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-
 
 app = FastAPI(title="Knowsee Mock API", version="1.0.0")
 
@@ -31,11 +31,11 @@ app.add_middleware(
 class Message(BaseModel):
     role: str  # "user" or "assistant"
     content: str
-    timestamp: Optional[float] = None
+    timestamp: float | None = None
 
 
 class ChatRequest(BaseModel):
-    messages: List[Message]
+    messages: list[Message]
     stream: bool = True
     temperature: float = 0.7
     max_tokens: int = 2048
@@ -43,7 +43,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     id: str
-    choices: List[dict]
+    choices: list[dict]
     model: str = "gpt-oss-120b"
     created: int
 
@@ -60,9 +60,7 @@ MOCK_RESPONSES = {
 This response is being streamed token-by-token to simulate real model behavior. You can configure the streaming delay in the .env file by adjusting MOCK_DELAY_MS.
 
 In production, I'll be replaced with the actual GPT-OSS-120B model hosted on Vertex AI.""",
-
     "hello": "Hello! I'm the Knowsee chat assistant. How can I help you today?",
-
     "help": """I can assist you with various tasks:
 
 1. Answer questions and provide information
@@ -71,7 +69,6 @@ In production, I'll be replaced with the actual GPT-OSS-120B model hosted on Ver
 4. Have conversations and remember context
 
 What would you like to explore?""",
-
     "test": "Test successful! The streaming is working correctly. ✓",
 }
 
@@ -119,7 +116,9 @@ async def generate_stream_response(content: str) -> AsyncGenerator[str, None]:
             "choices": [
                 {
                     "index": 0,
-                    "delta": {"content": token} if i > 0 else {"role": "assistant", "content": token},
+                    "delta": {"content": token}
+                    if i > 0
+                    else {"role": "assistant", "content": token},
                     "finish_reason": None,
                 }
             ],
@@ -147,7 +146,7 @@ async def generate_stream_response(content: str) -> AsyncGenerator[str, None]:
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, Any]:
     """Health check endpoint"""
     return {
         "status": "ok",
@@ -159,13 +158,13 @@ async def root():
 
 
 @app.get("/health")
-async def health():
+async def health() -> dict[str, str]:
     """Health check for Docker"""
     return {"status": "healthy"}
 
 
 @app.post("/v1/chat/completions")
-async def chat_completions(request: ChatRequest):
+async def chat_completions(request: ChatRequest) -> StreamingResponse | ChatResponse:
     """
     OpenAI-compatible chat completions endpoint
     Supports both streaming and non-streaming
@@ -212,7 +211,7 @@ async def chat_completions(request: ChatRequest):
 
 
 @app.post("/v1/files/upload")
-async def upload_file():
+async def upload_file() -> dict[str, Any]:
     """
     Mock file upload endpoint
     """
@@ -228,4 +227,5 @@ async def upload_file():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

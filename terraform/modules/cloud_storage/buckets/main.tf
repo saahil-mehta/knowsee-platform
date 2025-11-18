@@ -4,7 +4,12 @@ resource "google_storage_bucket" "bucket" {
   project  = var.project
   labels   = var.labels
 
-  force_destroy = false
+  force_destroy = var.force_destroy
+
+  versioning {
+    enabled = var.versioning.enabled
+  }
+
   dynamic "lifecycle_rule" {
     for_each = var.lifecycle_rules
     content {

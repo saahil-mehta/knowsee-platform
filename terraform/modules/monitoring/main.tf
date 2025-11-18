@@ -14,11 +14,11 @@ resource "google_monitoring_notification_channel" "notification_channel" {
 resource "google_bigquery_dataset" "audit_datasets" {
   for_each = { for ds in var.audit_datasets : ds.dataset_id => ds }
 
-  project                     = var.project_id
-  dataset_id                  = each.value.dataset_id
-  description                 = each.value.description
-  location                    = each.value.location
-  delete_contents_on_destroy  = each.value.delete_contents_on_destroy
+  project                    = var.project_id
+  dataset_id                 = each.value.dataset_id
+  description                = each.value.description
+  location                   = each.value.location
+  delete_contents_on_destroy = each.value.delete_contents_on_destroy
 }
 
 # Logging sinks for audit log export
@@ -65,14 +65,14 @@ resource "google_monitoring_alert_policy" "alert_policy" {
         comparison      = conditions.value.comparison
         threshold_value = conditions.value.threshold_value
         duration        = conditions.value.threshold_duration
-        
+
         dynamic "aggregations" {
           for_each = conditions.value.aggregation != null ? [conditions.value.aggregation] : []
           content {
             alignment_period     = aggregations.value.alignment_period
             per_series_aligner   = aggregations.value.per_series_aligner
             cross_series_reducer = aggregations.value.cross_series_reducer
-            group_by_fields     = aggregations.value.group_by_fields
+            group_by_fields      = aggregations.value.group_by_fields
           }
         }
       }
