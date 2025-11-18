@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "terraform-knowsee-dev"
+    bucket = "terraform-knowsee-development"
     prefix = "terraform/state"
   }
 }

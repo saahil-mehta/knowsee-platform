@@ -1,9 +1,9 @@
 # Dev Environment Configuration
-project_id        = "your-dev-project-id"
-billing_project   = "your-dev-project-id" # Usually same as project_id unless using shared billing
-project_name      = "sagent"
+project_id        = "knowsee-platform-development"
+billing_project   = "knowsee-platform-development" 
+project_name      = "knowsee-development"
 region            = "europe-west2"
-data_store_region = "us"
+data_store_region = "eu"
 environment       = "dev"
 
 labels = {
