@@ -29,5 +29,32 @@ locals {
         created-by = "adk"
       }
     }
+    frontend = {
+      name                             = "${var.resource_prefix}-${var.environment}-frontend"
+      location                         = var.region
+      image                            = "us-docker.pkg.dev/cloudrun/container/hello"
+      cpu                              = "1"
+      memory                           = "512Mi"
+      cpu_idle                         = true
+      min_instance_count               = 0
+      max_instance_count               = 10
+      max_instance_request_concurrency = 80
+      session_affinity                 = false
+      service_account_key              = "app"
+      env_vars = [
+        {
+          name  = "NODE_ENV"
+          value = "production"
+        },
+        {
+          name  = "NEXT_PUBLIC_COPILOT_AGENT"
+          value = "sagent_copilot"
+        }
+      ]
+      secret_env_vars = []
+      labels = {
+        created-by = "copilotkit"
+      }
+    }
   }
 }
