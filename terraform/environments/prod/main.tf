@@ -12,7 +12,7 @@ data "google_project" "project" {
 # ==============================================================================
 
 module "required_apis" {
-  source = "./infra/enabled_services"
+  source = "../../infra/enabled_services"
 }
 
 module "enabled_services" {
@@ -27,10 +27,11 @@ module "enabled_services" {
 # ==============================================================================
 
 module "gcp_service_accounts" {
-  source = "./infra/service_accounts"
+  source = "../../infra/service_accounts"
 
-  project_id   = var.project_id
-  project_name = var.project_name
+  project_id      = var.project_id
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
 }
 
 module "service_accounts" {
@@ -69,16 +70,16 @@ resource "google_project_iam_member" "service_account_roles" {
 # ==============================================================================
 
 module "storage_infra" {
-  source = "./infra/storage"
+  source = "../../infra/storage"
 
-  project_id   = var.project_id
-  project_name = var.project_name
-  region       = var.region
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
 }
 
 module "storage_buckets" {
   source   = "../../modules/cloud_storage/buckets"
-  for_each = module.storage_infra.storage_buckets
+  for_each = module.storage_infra.buckets
 
   name          = each.value.name
   location      = each.value.location
@@ -95,13 +96,40 @@ module "storage_buckets" {
 }
 
 # ==============================================================================
+# Artifact Registry
+# ==============================================================================
+
+module "artifact_registry_infra" {
+  source = "../../infra/artifact_repositories"
+
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
+}
+
+module "artifact_registries" {
+  source   = "../../modules/artifact_registry_repository"
+  for_each = module.artifact_registry_infra.artifact_registries
+
+  project_id     = var.project_id
+  repository_id  = each.value.repository_id
+  location       = each.value.location
+  format         = each.value.format
+  description    = each.value.description
+  immutable_tags = each.value.immutable_tags
+
+  depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
 # Discovery Engine (Vertex AI Search)
 # ==============================================================================
 
 module "discovery_engine_infra" {
-  source = "./infra/discovery_engine"
+  source = "../../infra/discovery_engine"
 
-  project_name      = var.project_name
+  resource_prefix   = var.resource_prefix
+  environment       = var.environment
   data_store_region = var.data_store_region
 }
 
@@ -129,10 +157,11 @@ module "discovery_engine" {
 # ==============================================================================
 
 module "log_sinks_infra" {
-  source = "./infra/log_sinks"
+  source = "../../infra/log_sinks"
 
-  project_name = var.project_name
-  region       = var.region
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
 }
 
 module "log_sinks" {
@@ -154,9 +183,10 @@ module "log_sinks" {
 # ==============================================================================
 
 module "cloud_run_infra" {
-  source = "./infra/cloud_run"
+  source = "../../infra/cloud_run"
 
-  project_name      = var.project_name
+  resource_prefix   = var.resource_prefix
+  environment       = var.environment
   region            = var.region
   data_store_region = var.data_store_region
 }

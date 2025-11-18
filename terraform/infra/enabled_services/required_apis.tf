@@ -1,10 +1,18 @@
-# Required GCP APIs for staging environment
-# Managed via the main.tf enable_apis variable
+# Shared required GCP APIs for dev/staging/prod environments
+# Note: cloudresourcemanager and serviceusage must be manually enabled before
+# running Terraform for the first time (bootstrap requirement)
 
-# This file can be used for additional API-specific configurations
-# Example:
-# resource "google_project_service" "additional_service" {
-#   project = var.project_id
-#   service = "additionalapi.googleapis.com"
-#   disable_on_destroy = false
-# }
+locals {
+  required_apis = [
+    "aiplatform.googleapis.com",
+    "bigquery.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+    "cloudtrace.googleapis.com",
+    "discoveryengine.googleapis.com",
+    "iam.googleapis.com",
+    "logging.googleapis.com",
+    "run.googleapis.com",
+    "serviceusage.googleapis.com",
+    "storage.googleapis.com",
+  ]
+}

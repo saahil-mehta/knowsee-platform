@@ -45,6 +45,11 @@ output "backend_url" {
   value       = module.cloud_run_services["backend"].service_url
 }
 
+output "frontend_url" {
+  description = "URL of the frontend Cloud Run service"
+  value       = module.cloud_run_services["frontend"].service_url
+}
+
 output "rag_pipeline_bucket" {
   description = "GCS bucket for RAG pipeline"
   value       = module.storage_buckets["rag_pipeline"].name
@@ -53,6 +58,11 @@ output "rag_pipeline_bucket" {
 output "logs_bucket" {
   description = "GCS bucket for logs"
   value       = module.storage_buckets["logs"].name
+}
+
+output "artifact_registry_url" {
+  description = "Artifact Registry URL for Docker images"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${module.artifact_registry_infra.artifact_registries["app"].repository_id}"
 }
 
 output "telemetry_dataset" {

@@ -8,10 +8,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRONTEND_DIR := frontend
-COMPOSE_FILE := dev/docker-compose.yml
-DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
-SAGENT_COMPOSE_FILE := dev/docker-compose.sagent.yml
-SAGENT_COMPOSE := docker compose -f $(SAGENT_COMPOSE_FILE)
+LOCAL_COMPOSE := docker compose -f dev/docker-compose.sagent.yml
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -48,15 +45,18 @@ endef
 
 .PHONY: \
 	help install bootstrap \
-	playground local-backend backend deploy data-ingestion \
-	dev-local dev-local-up dev-local-down dev-local-logs dev-local-restart dev-local-health \
+	playground local-backend data-ingestion \
+	docker-auth docker-build-backend docker-build-frontend docker-push-backend docker-push-frontend \
+	deploy-backend deploy-frontend build-backend build-frontend build-all \
+	release-backend release-frontend release-all \
+	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
-	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
 	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
+	$(addsuffix -validate,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
 	$(addsuffix -apply,$(TERRAFORM_ENVS)) \
 	$(addsuffix -output,$(TERRAFORM_ENVS)) \
@@ -67,15 +67,28 @@ help:
 	@printf "Development:\n"
 	@printf "  make install           Install uv deps + frontend packages\n"
 	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
-	@printf "  make local-backend     Run FastAPI backend (:$(BACKEND_PORT))\n"
-	@printf "  make dev-local         Start local Docker stack (api+web+redis)\n"
-	@printf "  make sagent            Build + run AG-UI Copilot stack (Docker)\n"
+	@printf "  make local-backend     Run FastAPI backend only (:$(BACKEND_PORT))\n"
+	@printf "  make local             Start full local stack (backend + frontend)\n"
+	@printf "  make local-down        Stop local stack\n"
+	@printf "  make local-logs        Stream local stack logs\n"
 	@printf "\n"
-	@printf "Cloud Environments (Terraform):\n"
-	@printf "  make cicd              Deploy CICD infrastructure\n"
-	@printf "  make dev               Deploy dev cloud environment\n"
-	@printf "  make staging           Deploy staging environment\n"
-	@printf "  make prod              Deploy production environment\n"
+	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
+	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
+	@printf "  make build-frontend ENV=<env>    Build and push frontend image\n"
+	@printf "  make deploy-backend ENV=<env>    Deploy backend to Cloud Run\n"
+	@printf "  make deploy-frontend ENV=<env>   Deploy frontend to Cloud Run\n"
+	@printf "  make release-backend ENV=<env>   Build, push, and deploy backend\n"
+	@printf "  make release-frontend ENV=<env>  Build, push, and deploy frontend\n"
+	@printf "  make release-all ENV=<env>       Release both services\n"
+	@printf "\n"
+	@printf "Terraform (per environment: cicd, dev, staging, prod):\n"
+	@printf "  make <env>-init        Initialise Terraform for environment\n"
+	@printf "  make <env>-validate    Validate Terraform configuration\n"
+	@printf "  make <env>-plan        Plan infrastructure changes\n"
+	@printf "  make <env>-apply       Apply infrastructure changes\n"
+	@printf "  make <env>-output      Show Terraform outputs\n"
+	@printf "  make <env>-destroy     Destroy infrastructure\n"
+	@printf "  make <env>             Full deploy (init -> plan -> apply -> output)\n"
 	@printf "\n"
 	@printf "GCP Profile Management:\n"
 	@printf "  make gcp-switch PROFILE=<name>  Switch GCP profile and update .env\n"
@@ -183,23 +196,93 @@ playground:
 local-backend:
 	uv run uvicorn app.fast_api_app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
 
-backend: deploy
+# ==============================================================================
+# Docker Build and Deploy
+# ==============================================================================
 
-deploy:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	gcloud beta run deploy sagent \
-		--source . \
-		--memory "4Gi" \
+# Environment must be specified: make release-backend ENV=dev
+ENV ?=
+RESOURCE_PREFIX ?= knowsee
+
+# Validate ENV is set for deploy targets
+define CHECK_ENV
+	@if [ -z "$(ENV)" ]; then \
+		printf "\nError: ENV not specified\n\n"; \
+		printf "Usage: make $(1) ENV=<environment>\n\n"; \
+		printf "Available environments: dev, staging, prod\n\n"; \
+		printf "Example: make $(1) ENV=dev\n\n"; \
+		exit 1; \
+	fi
+endef
+
+# Get registry URL from terraform output or construct it
+REGISTRY_URL = $(shell if [ -n "$(ENV)" ]; then cd terraform/environments/$(ENV) && terraform output -raw artifact_registry_url 2>/dev/null || echo "europe-west2-docker.pkg.dev/$$(gcloud config get-value project)/$(RESOURCE_PREFIX)-$(ENV)-app"; fi)
+SERVICE_PREFIX = $(RESOURCE_PREFIX)-$(ENV)
+
+docker-auth:
+	@gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+
+docker-build-backend:
+	$(call CHECK_ENV,docker-build-backend)
+	$(call PRINT_HEADER,Building Backend Image ($(ENV)))
+	docker build -t $(REGISTRY_URL)/backend:latest \
+		--build-arg COMMIT_SHA=$(shell git rev-parse HEAD) \
+		--build-arg AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0') \
+		.
+
+docker-build-frontend:
+	$(call CHECK_ENV,docker-build-frontend)
+	$(call PRINT_HEADER,Building Frontend Image ($(ENV)))
+	docker build -t $(REGISTRY_URL)/frontend:latest ./frontend
+
+docker-push-backend: docker-auth
+	$(call CHECK_ENV,docker-push-backend)
+	$(call PRINT_HEADER,Pushing Backend Image ($(ENV)))
+	docker push $(REGISTRY_URL)/backend:latest
+
+docker-push-frontend: docker-auth
+	$(call CHECK_ENV,docker-push-frontend)
+	$(call PRINT_HEADER,Pushing Frontend Image ($(ENV)))
+	docker push $(REGISTRY_URL)/frontend:latest
+
+deploy-backend:
+	$(call CHECK_ENV,deploy-backend)
+	$(call PRINT_HEADER,Deploying Backend to Cloud Run ($(ENV)))
+	@PROJECT_ID=$$(gcloud config get-value project) && \
+	gcloud run deploy $(SERVICE_PREFIX)-backend \
+		--image $(REGISTRY_URL)/backend:latest \
 		--project $$PROJECT_ID \
-		--region "europe-west2" \
-		--no-allow-unauthenticated \
-		--no-cpu-throttling \
-		--labels "created-by=adk" \
-		--update-build-env-vars "AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0')" \
-		--set-env-vars \
-		"COMMIT_SHA=$(shell git rev-parse HEAD),DATA_STORE_ID=sagent-datastore,DATA_STORE_REGION=us" \
-		$$(if $$(IAP),--iap) \
-		$$(if $$(PORT),--port=$$(PORT))
+		--region europe-west2 \
+		--allow-unauthenticated \
+		--memory 8Gi \
+		--cpu 4 \
+		--min-instances 1 \
+		--max-instances 10 \
+		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu"
+
+deploy-frontend:
+	$(call CHECK_ENV,deploy-frontend)
+	$(call PRINT_HEADER,Deploying Frontend to Cloud Run ($(ENV)))
+	@PROJECT_ID=$$(gcloud config get-value project) && \
+	gcloud run deploy $(SERVICE_PREFIX)-frontend \
+		--image $(REGISTRY_URL)/frontend:latest \
+		--project $$PROJECT_ID \
+		--region europe-west2 \
+		--allow-unauthenticated \
+		--memory 512Mi \
+		--cpu 1 \
+		--min-instances 0 \
+		--max-instances 10 \
+		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot"
+
+# Full build and deploy workflows
+build-backend: docker-build-backend docker-push-backend
+build-frontend: docker-build-frontend docker-push-frontend
+build-all: build-backend build-frontend
+
+release-backend: build-backend deploy-backend
+release-frontend: build-frontend deploy-frontend
+release-all: release-backend release-frontend
 
 data-ingestion:
 	PROJECT_ID=$$(gcloud config get-value project) && \
@@ -213,87 +296,49 @@ data-ingestion:
 		--pipeline-name="data-ingestion-pipeline")
 
 # ==============================================================================
-# Local Docker development stack
+# Local Docker Development
 # ==============================================================================
 
-dev-local: dev-local-up dev-local-health
-	$(call PRINT_HEADER,Local Development Services Ready)
-	@printf "  Frontend: http://localhost:3000\n"
-	@printf "  API:      http://localhost:8000\n"
-	$(SEPARATOR)
+local:
+	$(call PRINT_HEADER,Local Stack (Backend + Frontend))
+	@set -a && source .env && $(LOCAL_COMPOSE) up -d --build
 	@printf "\n"
-
-dev-local-up:
-	@$(DOCKER_COMPOSE) up -d --build
-
-dev-local-down:
-	@$(DOCKER_COMPOSE) down
-
-dev-local-logs:
-	@$(DOCKER_COMPOSE) logs -f
-
-dev-local-restart:
-	@$(DOCKER_COMPOSE) restart
-
-dev-local-health:
-	@printf "Checking local services...\n"
-	@curl -fsS --max-time 5 http://localhost:8000/health >/dev/null && printf "  api:   healthy\n" || printf "  api:   unavailable\n"
-	@{ \
-		attempt=0; \
-		while ! curl -fsS --max-time 5 http://localhost:3000 >/dev/null 2>&1; do \
-			attempt=$$((attempt + 1)); \
-			if [ $$attempt -ge 20 ]; then \
-				printf "  web:   starting (still warming up)\n"; \
-				exit 0; \
-			fi; \
-			sleep 1; \
-		done; \
-		printf "  web:   healthy\n"; \
-	}
-
-sagent:
-	$(call PRINT_HEADER,Sagent Stack (ADK + AG-UI + CopilotKit))
-	@set -a && source .env && $(SAGENT_COMPOSE) up -d --build
-	@echo ""
-	@echo "✅ Sagent stack is starting..."
-	@echo ""
-	@echo "   📍 Services:"
-	@echo "      • CopilotKit UI  → http://localhost:3000"
-	@echo "      • ADK Backend    → http://localhost:8000"
-	@echo ""
-	@echo "   📊 Monitor real-time logs:"
-	@echo "      • All services:   make sagent-logs"
-	@echo "      • Frontend only:  make sagent-logs-frontend"
-	@echo "      • Backend only:   make sagent-logs-backend"
-	@echo ""
-	@echo "   ⏳ Waiting for services to be healthy..."
+	@printf "  Services:\n"
+	@printf "    Frontend (CopilotKit)  http://localhost:3000\n"
+	@printf "    Backend (ADK)          http://localhost:8000\n"
+	@printf "\n"
+	@printf "  Commands:\n"
+	@printf "    make local-logs            Stream all logs\n"
+	@printf "    make local-logs-backend    Stream backend logs\n"
+	@printf "    make local-logs-frontend   Stream frontend logs\n"
+	@printf "    make local-status          Show service status\n"
+	@printf "    make local-down            Stop all services\n"
+	@printf "\n"
+	@printf "  Waiting for services...\n"
 	@sleep 5
-	@echo ""
-	@$(SAGENT_COMPOSE) ps
-	@printf "\n"
+	@$(LOCAL_COMPOSE) ps
 	$(SEPARATOR)
-	@printf "  ✨ Stack ready! Check logs above for any issues.\n"
+	@printf "  Stack ready.\n"
 	$(SEPARATOR)
 	@printf "\n"
 
-sagent-down:
-	@set -a && source .env && $(SAGENT_COMPOSE) down
+local-down:
+	@set -a && source .env && $(LOCAL_COMPOSE) down
 
-sagent-logs:
-	@echo "📊 Streaming logs from all Sagent services (Ctrl+C to exit)..."
-	@$(SAGENT_COMPOSE) logs -f
+local-logs:
+	@$(LOCAL_COMPOSE) logs -f
 
-sagent-logs-frontend:
-	@echo "📊 Streaming frontend logs (Ctrl+C to exit)..."
-	@$(SAGENT_COMPOSE) logs -f sagent-frontend
+local-logs-backend:
+	@$(LOCAL_COMPOSE) logs -f sagent-backend
 
-sagent-logs-backend:
-	@echo "📊 Streaming backend logs (Ctrl+C to exit)..."
-	@$(SAGENT_COMPOSE) logs -f sagent-backend
+local-logs-frontend:
+	@$(LOCAL_COMPOSE) logs -f sagent-frontend
 
-sagent-status:
-	@echo "📊 Sagent service status:"
-	@$(SAGENT_COMPOSE) ps
+local-status:
+	@$(LOCAL_COMPOSE) ps
+
+local-restart:
+	@set -a && source .env && $(LOCAL_COMPOSE) restart
 
 # ==============================================================================
 # Frontend workflows (Next.js)
@@ -383,6 +428,9 @@ define TERRAFORM_TARGETS
 $(1)-init:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform init
 
+$(1)-validate:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform validate
+
 $(1)-plan:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform plan -var-file=$(TF_VARS_NAME)
 
@@ -395,7 +443,7 @@ $(1)-output:
 $(1)-destroy:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform destroy -var-file=$(TF_VARS_NAME)
 
-$(1): $(1)-init $(1)-plan $(1)-apply $(1)-output
+$(1): $(1)-init $(1)-validate $(1)-plan $(1)-apply $(1)-output
 endef
 
 $(foreach env,$(TERRAFORM_ENVS),$(eval $(call TERRAFORM_TARGETS,$(env))))

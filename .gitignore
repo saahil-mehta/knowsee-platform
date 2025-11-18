@@ -205,3 +205,6 @@ tools/a2a-inspector/
 # Cache for frontend
 frontend/tsconfig.tsbuildinfo
 frontend/.next/
+
+# Local memory
+.scratchpad.txt
