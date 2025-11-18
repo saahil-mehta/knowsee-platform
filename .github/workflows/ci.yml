@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   lint-and-test:
@@ -17,6 +17,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Python/uv setup for backend
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      # Node.js setup for frontend
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -24,16 +34,34 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Install Playwright browsers
-        working-directory: frontend
-        run: npx playwright install --with-deps
+      # Terraform setup for infrastructure tests
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
-      - name: Run lint
-        run: make lint
+      # Run all tests
+      - name: Run backend lint
+        run: make backend-lint
 
-      - name: Run smoke tests
-        run: make test
+      - name: Run frontend lint
+        run: make frontend-lint
+
+      - name: Run backend tests
+        run: make backend-test
+
+      - name: Run frontend tests
+        run: make frontend-test
+
+      - name: Run Terraform validation tests
+        run: bash tests/terraform/test_validate.sh
+
+      - name: Run Terraform security tests
+        run: bash tests/terraform/test_security.sh
+
+      - name: Run Terraform module tests
+        run: bash tests/terraform/test_modules.sh
