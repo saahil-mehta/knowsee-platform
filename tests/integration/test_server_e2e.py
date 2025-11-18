@@ -27,15 +27,16 @@ import pytest
 import requests
 from requests.exceptions import RequestException
 
-# Skip server e2e tests if GCP credentials are not available
+# Skip server e2e tests unless explicitly enabled via environment variable
 # These tests require a running server with real GCP integration
-pytest.skip(
-    "Server e2e tests require running server with GCP credentials",
-    allow_module_level=True,
+# Set RUN_E2E_TESTS=1 to enable these tests
+pytestmark = pytest.mark.skipif(
+    os.environ.get("RUN_E2E_TESTS") != "1",
+    reason="Server e2e tests require running server with GCP credentials. Set RUN_E2E_TESTS=1 to run.",
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)  # type: ignore[unreachable]
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_URL = "http://127.0.0.1:8000/"
@@ -170,7 +171,6 @@ def test_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
 
     assert events, "No events received from stream"
     # Check for valid content in the response
-    has_text_content = False
     for event in events:
         content = event.get("content")
         if (
@@ -178,7 +178,6 @@ def test_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
             and content.get("parts")
             and any(part.get("text") for part in content["parts"])
         ):
-            has_text_content = True
             break
 
 

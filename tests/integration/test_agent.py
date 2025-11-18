@@ -33,12 +33,13 @@ from google.genai import types
 
 from app.agent import create_agent
 
-# Integration tests temporarily skipped - require deeper ADK mocking
-# The ADK Agent class creates internal Gemini clients that bypass our mocks
-# TODO: Implement proper ADK LLM mocking strategy
-pytestmark = pytest.mark.skip(
-    reason="Integration tests require deeper ADK internal mocking - tracked for future implementation"
-)
+# Integration tests use mocked GCP services from conftest.py
+# The mocks cover: GCP auth, Vertex AI, Storage, Logging, and Gemini LLM
+# Tests are deterministic and run without requiring live GCP credentials
+#
+# Note: Some tests are marked xfail due to ADK internal Gemini client creation
+# that bypasses our mocks. These tests document expected behavior and provide
+# CI signal about regressions in testable areas.
 
 
 # ==============================================================================
@@ -83,6 +84,10 @@ def create_mock_retrieve_docs(return_value: str) -> Any:
 # Test Approach: Mock retrieve_docs to avoid external API calls, then verify
 # the agent produces streaming events with text content.
 # ==============================================================================
+@pytest.mark.xfail(
+    reason="ADK creates internal Gemini clients that bypass mocks - tracked for future deep mocking",
+    strict=False,
+)
 def test_agent_stream_basic() -> None:
     """
     Test basic agent streaming functionality.
@@ -212,6 +217,10 @@ def test_agent_tool_invocation() -> None:
 #
 # Why This Matters: Multi-turn conversations are core to chatbot functionality.
 # ==============================================================================
+@pytest.mark.xfail(
+    reason="ADK creates internal Gemini clients that bypass mocks - tracked for future deep mocking",
+    strict=False,
+)
 def test_agent_multi_turn_conversation() -> None:
     """
     Test that the agent handles multi-turn conversations correctly.
@@ -304,7 +313,7 @@ def test_agent_handles_empty_message() -> None:
 
     # Should not raise exception
     try:
-        events = list(
+        list(
             runner.run(
                 new_message=message,
                 user_id="test_user",
@@ -331,6 +340,10 @@ def test_agent_handles_empty_message() -> None:
 #
 # Security: Session isolation is a security requirement, not just functionality.
 # ==============================================================================
+@pytest.mark.xfail(
+    reason="ADK creates internal Gemini clients that bypass mocks - tracked for future deep mocking",
+    strict=False,
+)
 def test_session_isolation() -> None:
     """
     Test that different sessions are properly isolated.
@@ -405,6 +418,10 @@ def test_session_isolation() -> None:
 #
 # This test verifies SSE mode works correctly.
 # ==============================================================================
+@pytest.mark.xfail(
+    reason="ADK creates internal Gemini clients that bypass mocks - tracked for future deep mocking",
+    strict=False,
+)
 def test_streaming_mode_sse() -> None:
     """
     Test that SSE streaming mode works correctly.
