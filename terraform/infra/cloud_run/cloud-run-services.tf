@@ -1,5 +1,7 @@
+# Shared Cloud Run services configuration for dev/staging/prod environments
+
 output "cloud_run_services" {
-  description = "Cloud Run services for dev environment"
+  description = "Cloud Run services for application environments"
   value = {
     backend = {
       name                             = "${var.project_name}-backend"
@@ -28,30 +30,6 @@ output "cloud_run_services" {
         created-by = "adk"
       }
     }
-    # Uncomment when frontend is ready
-    # frontend = {
-    #   name                             = "${var.project_name}-frontend"
-    #   location                         = var.region
-    #   image                            = "us-docker.pkg.dev/cloudrun/container/hello"
-    #   cpu                              = "2"
-    #   memory                           = "4Gi"
-    #   cpu_idle                         = true
-    #   min_instance_count               = 0
-    #   max_instance_count               = 10
-    #   max_instance_request_concurrency = 80
-    #   session_affinity                 = false
-    #   service_account_key              = "app"
-    #   env_vars = [
-    #     {
-    #       name  = "NEXT_PUBLIC_AGUI_URL"
-    #       value = "https://${var.project_name}-backend-xxxxx-ew.a.run.app/api/agui"
-    #     }
-    #   ]
-    #   secret_env_vars = []
-    #   labels = {
-    #     created-by = "adk"
-    #   }
-    # }
   }
 }
 

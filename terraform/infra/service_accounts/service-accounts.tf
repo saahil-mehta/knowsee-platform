@@ -1,12 +1,49 @@
-# Service accounts configuration for staging
-# Add service account definitions here or manage via main.tf service_accounts variable
+# Shared service accounts configuration for dev/staging/prod environments
 
-# Example:
-# module "custom_service_account" {
-#   source = "../modules/iam/service_accounts"
-#
-#   project_id   = var.project_id
-#   account_id   = "custom-sa"
-#   display_name = "Custom Service Account"
-#   description  = "Service account for custom workloads"
-# }
+output "service_accounts" {
+  description = "Service accounts for application environments"
+  value = {
+    app = {
+      account_id   = "${var.project_name}-app"
+      display_name = "${var.project_name} Agent Service Account"
+      description  = "Service account for running the ADK agent application"
+      project_id   = var.project_id
+      roles = [
+        "roles/aiplatform.user",
+        "roles/discoveryengine.editor",
+        "roles/logging.logWriter",
+        "roles/cloudtrace.agent",
+        "roles/storage.admin",
+        "roles/serviceusage.serviceUsageConsumer",
+      ]
+    }
+    vertexai_pipeline = {
+      account_id   = "${var.project_name}-rag"
+      display_name = "Vertex AI Pipeline Service Account"
+      description  = "Service account for Vertex AI data ingestion pipeline"
+      project_id   = var.project_id
+      roles = [
+        "roles/storage.admin",
+        "roles/aiplatform.user",
+        "roles/discoveryengine.admin",
+        "roles/logging.logWriter",
+        "roles/artifactregistry.writer",
+        "roles/bigquery.dataEditor",
+        "roles/bigquery.jobUser",
+        "roles/bigquery.readSessionUser",
+        "roles/bigquery.connectionAdmin",
+        "roles/resourcemanager.projectIamAdmin"
+      ]
+    }
+  }
+}
+
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+}
+
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+}

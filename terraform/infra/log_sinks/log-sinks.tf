@@ -1,3 +1,5 @@
+# Shared log sinks configuration for dev/staging/prod environments
+
 output "log_sinks" {
   description = "Log sinks configuration for BigQuery"
   value = {

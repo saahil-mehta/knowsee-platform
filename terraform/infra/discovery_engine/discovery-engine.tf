@@ -1,3 +1,13 @@
+# Shared Vertex AI Discovery Engine configuration for dev/staging/prod environments
+
+locals {
+  environment_display_names = {
+    dev     = "Search Engine App Dev"
+    staging = "Search Engine App Staging"
+    prod    = "Search Engine App Production"
+  }
+}
+
 output "discovery_engine_config" {
   description = "Vertex AI Discovery Engine configuration"
   value = {
@@ -11,7 +21,7 @@ output "discovery_engine_config" {
       create_advanced_site_search = false
       create_search_engine        = true
       search_engine_id            = "${var.project_name}-search"
-      search_engine_display_name  = "Search Engine App Staging"
+      search_engine_display_name  = local.environment_display_names[var.environment]
       search_tier                 = "SEARCH_TIER_ENTERPRISE"
     }
   }
@@ -24,5 +34,10 @@ variable "project_name" {
 
 variable "data_store_region" {
   description = "Vertex AI Discovery Engine datastore region"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
   type        = string
 }
