@@ -72,13 +72,14 @@ resource "google_project_iam_member" "service_account_roles" {
 module "storage_infra" {
   source = "../../infra/storage"
 
-  project_id = var.project_id
-  region     = var.region
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
 }
 
 module "storage_buckets" {
   source   = "../../modules/cloud_storage/buckets"
-  for_each = module.storage_infra.storage_buckets
+  for_each = module.storage_infra.buckets
 
   name          = each.value.name
   location      = each.value.location

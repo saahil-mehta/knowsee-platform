@@ -1,8 +1,9 @@
-output "storage_buckets" {
-  description = "GCS buckets for CICD project"
-  value = {
+# CICD storage buckets configuration
+
+locals {
+  buckets = {
     logs = {
-      name          = "${var.project_id}-${var.project_name}-logs"
+      name          = "${var.resource_prefix}-${var.environment}-logs"
       location      = var.region
       storage_class = "STANDARD"
       versioning    = false
@@ -12,13 +13,18 @@ output "storage_buckets" {
   }
 }
 
-variable "project_id" {
-  description = "CICD project ID"
+output "buckets" {
+  description = "GCS buckets for CICD project"
+  value       = local.buckets
+}
+
+variable "resource_prefix" {
+  description = "Prefix for resource naming"
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name for resource naming"
+variable "environment" {
+  description = "Environment name"
   type        = string
 }
 

@@ -57,6 +57,7 @@ endef
 	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
+	$(addsuffix -validate,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
 	$(addsuffix -apply,$(TERRAFORM_ENVS)) \
 	$(addsuffix -output,$(TERRAFORM_ENVS)) \
@@ -71,11 +72,14 @@ help:
 	@printf "  make dev-local         Start local Docker stack (api+web+redis)\n"
 	@printf "  make sagent            Build + run AG-UI Copilot stack (Docker)\n"
 	@printf "\n"
-	@printf "Cloud Environments (Terraform):\n"
-	@printf "  make cicd              Deploy CICD infrastructure\n"
-	@printf "  make dev               Deploy dev cloud environment\n"
-	@printf "  make staging           Deploy staging environment\n"
-	@printf "  make prod              Deploy production environment\n"
+	@printf "Terraform (per environment: cicd, dev, staging, prod):\n"
+	@printf "  make <env>-init        Initialise Terraform for environment\n"
+	@printf "  make <env>-validate    Validate Terraform configuration\n"
+	@printf "  make <env>-plan        Plan infrastructure changes\n"
+	@printf "  make <env>-apply       Apply infrastructure changes\n"
+	@printf "  make <env>-output      Show Terraform outputs\n"
+	@printf "  make <env>-destroy     Destroy infrastructure\n"
+	@printf "  make <env>             Full deploy (init -> plan -> apply -> output)\n"
 	@printf "\n"
 	@printf "GCP Profile Management:\n"
 	@printf "  make gcp-switch PROFILE=<name>  Switch GCP profile and update .env\n"
@@ -383,6 +387,9 @@ define TERRAFORM_TARGETS
 $(1)-init:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform init
 
+$(1)-validate:
+	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform validate
+
 $(1)-plan:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform plan -var-file=$(TF_VARS_NAME)
 
@@ -395,7 +402,7 @@ $(1)-output:
 $(1)-destroy:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform destroy -var-file=$(TF_VARS_NAME)
 
-$(1): $(1)-init $(1)-plan $(1)-apply $(1)-output
+$(1): $(1)-init $(1)-validate $(1)-plan $(1)-apply $(1)-output
 endef
 
 $(foreach env,$(TERRAFORM_ENVS),$(eval $(call TERRAFORM_TARGETS,$(env))))
