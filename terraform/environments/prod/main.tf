@@ -96,6 +96,32 @@ module "storage_buckets" {
 }
 
 # ==============================================================================
+# Artifact Registry
+# ==============================================================================
+
+module "artifact_registry_infra" {
+  source = "../../infra/artifact_repositories"
+
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
+}
+
+module "artifact_registries" {
+  source   = "../../modules/artifact_registry_repository"
+  for_each = module.artifact_registry_infra.artifact_registries
+
+  project_id     = var.project_id
+  repository_id  = each.value.repository_id
+  location       = each.value.location
+  format         = each.value.format
+  description    = each.value.description
+  immutable_tags = each.value.immutable_tags
+
+  depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
 # Discovery Engine (Vertex AI Search)
 # ==============================================================================
 
