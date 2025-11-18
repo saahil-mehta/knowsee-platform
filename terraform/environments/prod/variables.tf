@@ -1,62 +1,43 @@
-# Variables for prod environment
-
 variable "project_id" {
-  description = "GCP project ID for prod environment"
+  description = "Production GCP project ID"
   type        = string
+}
+
+variable "billing_project" {
+  description = "Project to use for quota and billing. Required when user_project_override is enabled. Usually same as project_id."
+  type        = string
+}
+
+variable "project_name" {
+  description = "Project name used as a base for resource naming"
+  type        = string
+  default     = "sagent"
 }
 
 variable "region" {
-  description = "GCP region"
+  description = "Default GCP region"
   type        = string
-  default     = "us-central1"
+  default     = "europe-west2"
+}
+
+variable "data_store_region" {
+  description = "Region for Vertex AI Discovery Engine datastore"
+  type        = string
+  default     = "us"
 }
 
 variable "environment" {
-  description = "Environment name (staging/prod)"
+  description = "Environment name"
   type        = string
   default     = "prod"
-}
-
-variable "enable_apis" {
-  description = "List of GCP APIs to enable"
-  type        = list(string)
-  default     = []
 }
 
 variable "labels" {
   description = "Common labels to apply to all resources"
   type        = map(string)
-  default     = {}
-}
-
-# Storage variables
-variable "storage_buckets" {
-  description = "Map of storage buckets to create"
-  type = map(object({
-    location      = string
-    storage_class = string
-    versioning    = bool
-  }))
-  default = {}
-}
-
-# BigQuery variables
-variable "bigquery_datasets" {
-  description = "Map of BigQuery datasets to create"
-  type = map(object({
-    location                    = string
-    delete_contents_on_destroy  = bool
-    default_table_expiration_ms = number
-  }))
-  default = {}
-}
-
-# Service Account variables
-variable "service_accounts" {
-  description = "Map of service accounts to create"
-  type = map(object({
-    display_name = string
-    description  = string
-  }))
-  default = {}
+  default = {
+    environment = "prod"
+    managed_by  = "terraform"
+    project     = "knowsee"
+  }
 }

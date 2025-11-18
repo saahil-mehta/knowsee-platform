@@ -1,37 +1,66 @@
-# Outputs for prod environment
-
 output "project_id" {
-  description = "The GCP project ID"
+  description = "Production project ID"
   value       = var.project_id
 }
 
-output "region" {
-  description = "The GCP region"
-  value       = var.region
+output "project_number" {
+  description = "Production project number"
+  value       = data.google_project.project.number
 }
 
-output "environment" {
-  description = "The environment name"
-  value       = var.environment
+output "app_service_account_email" {
+  description = "Email of the app service account"
+  value       = module.service_accounts["app"].email
 }
 
-output "service_account_emails" {
-  description = "Map of service account names to their email addresses"
+output "vertexai_pipeline_service_account_email" {
+  description = "Email of the Vertex AI pipeline service account"
+  value       = module.service_accounts["vertexai_pipeline"].email
+}
+
+output "data_store_id" {
+  description = "Vertex AI Discovery Engine data store ID"
+  value       = module.discovery_engine.data_store_id
+}
+
+output "search_engine_id" {
+  description = "Vertex AI Discovery Engine search engine ID"
+  value       = module.discovery_engine.search_engine_id
+}
+
+output "cloud_run_services" {
+  description = "Cloud Run services"
   value = {
-    for k, v in module.service_accounts : k => v.email
+    for key, service in module.cloud_run_services :
+    key => {
+      name     = service.service_name
+      url      = service.service_url
+      location = service.service_location
+    }
   }
 }
 
-output "storage_bucket_names" {
-  description = "Map of storage bucket identifiers to their names"
-  value = {
-    for k, v in module.storage_buckets : k => v.name
-  }
+output "backend_url" {
+  description = "URL of the backend Cloud Run service"
+  value       = module.cloud_run_services["backend"].service_url
 }
 
-output "bigquery_dataset_ids" {
-  description = "Map of BigQuery dataset identifiers to their IDs"
-  value = {
-    for k, v in module.bigquery_datasets : k => v.dataset_id
-  }
+output "rag_pipeline_bucket" {
+  description = "GCS bucket for RAG pipeline"
+  value       = module.storage_buckets["rag_pipeline"].name
+}
+
+output "logs_bucket" {
+  description = "GCS bucket for logs"
+  value       = module.storage_buckets["logs"].name
+}
+
+output "telemetry_dataset" {
+  description = "BigQuery dataset for telemetry logs"
+  value       = module.log_sinks["telemetry"].dataset_id
+}
+
+output "feedback_dataset" {
+  description = "BigQuery dataset for feedback logs"
+  value       = module.log_sinks["feedback"].dataset_id
 }
