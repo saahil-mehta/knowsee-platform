@@ -54,7 +54,7 @@ endef
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	sagent sagent-down sagent-logs sagent-logs-frontend sagent-logs-backend sagent-status \
-	gcp-switch gcp-status gcp-setup \
+	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
 	$(addsuffix -init,$(TERRAFORM_ENVS)) \
 	$(addsuffix -plan,$(TERRAFORM_ENVS)) \
@@ -79,6 +79,7 @@ help:
 	@printf "\n"
 	@printf "GCP Profile Management:\n"
 	@printf "  make gcp-switch PROFILE=<name>  Switch GCP profile and update .env\n"
+	@printf "  make gcp-login                  Full GCP authentication (CLI + ADC)\n"
 	@printf "  make gcp-status                 Show current GCP profile and project\n"
 	@printf "  make gcp-setup                  Get started with GCP (if not configured)\n"
 	@printf "\n"
@@ -130,6 +131,25 @@ gcp-setup:
 	@./scripts/switch-gcp-profile.sh
 	@printf "\nFor more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
 
+gcp-login:
+	$(call PRINT_HEADER,GCP Full Authentication)
+	@printf "Step 1/3: Authenticating gcloud CLI...\n"
+	@gcloud auth login
+	@printf "\nStep 2/3: Authenticating Application Default Credentials...\n"
+	@gcloud auth application-default login
+	@printf "\nStep 3/3: Setting ADC quota project...\n"
+	@PROJECT_ID=$$(gcloud config get-value project 2>/dev/null); \
+	if [ -n "$$PROJECT_ID" ]; then \
+		gcloud auth application-default set-quota-project "$$PROJECT_ID"; \
+		printf "ADC quota project set to: $$PROJECT_ID\n"; \
+	else \
+		printf "Warning: No project configured. Run 'make gcp-switch PROFILE=<name>' first.\n"; \
+	fi
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "\nAuthentication complete. Both CLI and ADC credentials are now active.\n"
+	@printf "For more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
+
 gcp-status:
 	$(call PRINT_HEADER,GCP Configuration Status)
 	@printf "gcloud active profile:\n"
@@ -142,8 +162,8 @@ gcp-status:
 	else \
 		echo "  .env file not found"; \
 	fi
-	@printf "\nAuthenticated accounts:\n"
-	@gcloud auth list 2>/dev/null || echo "  No authenticated accounts"
+	@printf "\nAll configurations:\n"
+	@gcloud config configurations list 2>/dev/null || echo "  No configurations found"
 	@printf "\nFor more details, see: docs/GCP_PROFILE_MANAGEMENT.md\n"
 	$(SEPARATOR)
 	@printf "\n"
