@@ -1,5 +1,7 @@
+# Shared storage buckets configuration for dev/staging/prod environments
+
 output "storage_buckets" {
-  description = "GCS buckets for dev project"
+  description = "GCS buckets for application environments"
   value = {
     logs = {
       name          = "${var.project_id}-${var.project_name}-logs"
@@ -19,7 +21,7 @@ output "storage_buckets" {
 }
 
 variable "project_id" {
-  description = "Dev project ID"
+  description = "GCP project ID"
   type        = string
 }
 

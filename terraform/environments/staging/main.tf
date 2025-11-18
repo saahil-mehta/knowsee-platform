@@ -12,7 +12,7 @@ data "google_project" "project" {
 # ==============================================================================
 
 module "required_apis" {
-  source = "./infra/enabled_services"
+  source = "../../infra/enabled_services"
 }
 
 module "enabled_services" {
@@ -27,7 +27,7 @@ module "enabled_services" {
 # ==============================================================================
 
 module "gcp_service_accounts" {
-  source = "./infra/service_accounts"
+  source = "../../infra/service_accounts"
 
   project_id   = var.project_id
   project_name = var.project_name
@@ -69,7 +69,7 @@ resource "google_project_iam_member" "service_account_roles" {
 # ==============================================================================
 
 module "storage_infra" {
-  source = "./infra/storage"
+  source = "../../infra/storage"
 
   project_id   = var.project_id
   project_name = var.project_name
@@ -99,10 +99,11 @@ module "storage_buckets" {
 # ==============================================================================
 
 module "discovery_engine_infra" {
-  source = "./infra/discovery_engine"
+  source = "../../infra/discovery_engine"
 
   project_name      = var.project_name
   data_store_region = var.data_store_region
+  environment       = var.environment
 }
 
 module "discovery_engine" {
@@ -129,7 +130,7 @@ module "discovery_engine" {
 # ==============================================================================
 
 module "log_sinks_infra" {
-  source = "./infra/log_sinks"
+  source = "../../infra/log_sinks"
 
   project_name = var.project_name
   region       = var.region
@@ -154,7 +155,7 @@ module "log_sinks" {
 # ==============================================================================
 
 module "cloud_run_infra" {
-  source = "./infra/cloud_run"
+  source = "../../infra/cloud_run"
 
   project_name      = var.project_name
   region            = var.region
