@@ -77,15 +77,15 @@ resource "google_artifact_registry_repository" "repositories" {
 module "storage_infra" {
   source = "./infra/storage"
 
-  project_id   = var.project_id
-  project_name = var.project_name
-  region       = var.region
-  labels       = var.labels
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
+  labels          = var.labels
 }
 
 module "storage_buckets" {
   source   = "../../modules/cloud_storage/buckets"
-  for_each = module.storage_infra.storage_buckets
+  for_each = module.storage_infra.buckets
 
   name          = each.value.name
   location      = each.value.location

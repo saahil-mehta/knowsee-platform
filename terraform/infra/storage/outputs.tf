@@ -1,4 +1,4 @@
-output "storage_buckets" {
+output "buckets" {
   description = "GCS buckets for application environments"
-  value       = local.storage_buckets
+  value       = local.buckets
 }

@@ -14,6 +14,18 @@ variable "project_name" {
   default     = "sagent"
 }
 
+variable "resource_prefix" {
+  description = "Prefix for resource naming (e.g., 'knowsee')"
+  type        = string
+  default     = "knowsee"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "cicd"
+}
+
 variable "region" {
   description = "Default GCP region"
   type        = string
