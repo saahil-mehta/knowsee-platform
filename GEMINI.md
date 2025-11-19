@@ -1,3 +1,4 @@
+Look at Claude MD for guidance, if you've already visited that file, continue. 
 Coding Agent guidance:
 # Google Agent Development Kit (ADK) Python Cheatsheet
 
