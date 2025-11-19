@@ -86,7 +86,7 @@ export function ChatComposer({
             type="button"
             disabled={disabled}
             onClick={onSend}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 mb-0.5"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 mb-0.5"
             aria-label="Send message"
           >
             <SendIcon />
@@ -128,7 +128,7 @@ function SendIcon() {
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth="2"
+      strokeWidth="1.5"
       viewBox="0 0 24 24"
     >
       <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
