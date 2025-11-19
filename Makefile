@@ -225,7 +225,7 @@ docker-auth:
 docker-build-backend:
 	$(call CHECK_ENV,docker-build-backend)
 	$(call PRINT_HEADER,Building Backend Image ($(ENV)))
-	docker build -t $(REGISTRY_URL)/backend:latest \
+	docker build --platform linux/amd64 -t $(REGISTRY_URL)/backend:latest \
 		--build-arg COMMIT_SHA=$(shell git rev-parse HEAD) \
 		--build-arg AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0') \
 		.
@@ -233,7 +233,7 @@ docker-build-backend:
 docker-build-frontend:
 	$(call CHECK_ENV,docker-build-frontend)
 	$(call PRINT_HEADER,Building Frontend Image ($(ENV)))
-	docker build -t $(REGISTRY_URL)/frontend:latest ./frontend
+	docker build --platform linux/amd64 -t $(REGISTRY_URL)/frontend:latest ./frontend
 
 docker-push-backend: docker-auth
 	$(call CHECK_ENV,docker-push-backend)
@@ -253,7 +253,7 @@ deploy-backend:
 		--image $(REGISTRY_URL)/backend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
-		--allow-unauthenticated \
+		--no-allow-unauthenticated \
 		--memory 8Gi \
 		--cpu 4 \
 		--min-instances 1 \
@@ -268,7 +268,7 @@ deploy-frontend:
 		--image $(REGISTRY_URL)/frontend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
-		--allow-unauthenticated \
+		--no-allow-unauthenticated \
 		--memory 512Mi \
 		--cpu 1 \
 		--min-instances 0 \
