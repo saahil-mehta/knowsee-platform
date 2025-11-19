@@ -435,6 +435,7 @@ $(1)-plan:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform plan -var-file=$(TF_VARS_NAME)
 
 $(1)-apply:
+	@printf "\n!!! REMINDER: Ensure you have built and pushed your images if this is a fresh deploy!!!\n"
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform apply -var-file=$(TF_VARS_NAME)
 
 $(1)-output:
