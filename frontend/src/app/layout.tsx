@@ -3,8 +3,7 @@ import { CopilotKit } from "@copilotkit/react-core";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { NavHeader } from "@/components/nav-header";
-import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarLayout } from "@/components/sidebar-layout";
 
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
@@ -52,15 +51,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CopilotKit runtimeUrl={RUNTIME_URL} agent={AGENT_IDENTIFIER}>
-            <div className="flex h-screen overflow-hidden">
-              <AppSidebar />
-              <div className="flex flex-1 flex-col">
-                <NavHeader />
-                <main className="flex-1 overflow-auto">
-                  {children}
-                </main>
-              </div>
-            </div>
+            <SidebarLayout>
+              {children}
+            </SidebarLayout>
             <Toaster position="top-center" />
           </CopilotKit>
         </ThemeProvider>
