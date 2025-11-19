@@ -13,6 +13,14 @@
 # limitations under the License.
 
 import os
+import warnings
+
+# Suppress Pydantic warning from ag-ui/ADK library internals
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    module="pydantic._internal._generate_schema",
+)
 
 import google.auth
 from fastapi import FastAPI
