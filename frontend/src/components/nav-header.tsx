@@ -14,7 +14,7 @@ export function NavHeader({ isSidebarCollapsed, onToggleSidebar }: NavHeaderProp
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="hidden md:flex">
           <PanelLeft className="h-5 w-5" />

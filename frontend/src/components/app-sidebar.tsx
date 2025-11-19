@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare }
+  from "lucide-react";
 
 export function AppSidebar({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <aside
-      className={`hidden flex-col border-r bg-muted/10 md:flex transition-all duration-300 ease-in-out ${isCollapsed ? "w-0 border-r-0 overflow-hidden" : "w-64"
+      className={`hidden flex-col bg-muted/10 md:flex transition-all duration-300 ease-in-out ${isCollapsed ? "w-0 overflow-hidden" : "w-64"
         }`}
     >
       <div className="flex h-14 items-center border-b px-4 whitespace-nowrap overflow-hidden">
