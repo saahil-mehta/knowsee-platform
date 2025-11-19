@@ -53,7 +53,7 @@ export function ChatShell({
           </div>
         )}
 
-        <div className="mt-auto p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mt-auto p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="mx-auto max-w-3xl w-full">
             <ChatComposer
               value={inputValue}
