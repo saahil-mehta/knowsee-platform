@@ -70,7 +70,7 @@ resource "google_project_iam_member" "service_account_roles" {
 # ==============================================================================
 
 module "project_permissions" {
-  source = "./permissions/project"
+  source = "../../infra/permissions/project"
 }
 
 module "project_iam" {
@@ -80,6 +80,21 @@ module "project_iam" {
   iam_bindings = module.project_permissions.project_iam_bindings
 
   depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
+# Cloud Run IAM Permissions
+# ==============================================================================
+
+module "cloud_run_permissions" {
+  source = "../../infra/permissions/cloud_run"
+
+  project_id      = var.project_id
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+  region          = var.region
+
+  depends_on = [module.cloud_run_services]
 }
 
 # ==============================================================================
