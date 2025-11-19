@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from "react";
+import { KeyboardEvent, useState, useRef, useEffect } from "react";
 
 type ChatComposerProps = {
   value: string;
@@ -18,6 +18,19 @@ export function ChatComposer({
   isLoading,
 }: ChatComposerProps) {
   const disabled = value.trim().length === 0;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -41,12 +54,13 @@ export function ChatComposer({
       >
         <button
           type="button"
-          className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1"
+          className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1.5"
           aria-label="Attach file"
         >
           <PaperclipIcon />
         </button>
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
@@ -97,7 +111,7 @@ function PaperclipIcon() {
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth="2"
+      strokeWidth="1.5"
       viewBox="0 0 24 24"
     >
       <path d="M21.44 11.05 12 20.49a5 5 0 0 1-7.07-7.07l9.43-9.44a3 3 0 0 1 4.24 4.24l-9.43 9.44" />
