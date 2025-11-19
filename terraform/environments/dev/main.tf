@@ -66,6 +66,23 @@ resource "google_project_iam_member" "service_account_roles" {
 }
 
 # ==============================================================================
+# Project IAM Permissions
+# ==============================================================================
+
+module "project_permissions" {
+  source = "./permissions/project"
+}
+
+module "project_iam" {
+  source = "../../modules/iam/project"
+
+  project_id   = var.project_id
+  iam_bindings = module.project_permissions.project_iam_bindings
+
+  depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
 # Storage Buckets
 # ==============================================================================
 
