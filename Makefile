@@ -253,6 +253,7 @@ deploy-backend:
 		--image $(REGISTRY_URL)/backend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
+		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
 		--no-allow-unauthenticated \
 		--memory 8Gi \
 		--cpu 4 \
@@ -264,16 +265,20 @@ deploy-frontend:
 	$(call CHECK_ENV,deploy-frontend)
 	$(call PRINT_HEADER,Deploying Frontend to Cloud Run ($(ENV)))
 	@PROJECT_ID=$$(gcloud config get-value project) && \
+	BACKEND_URL=$$(gcloud run services describe $(SERVICE_PREFIX)-backend \
+		--region europe-west2 \
+		--format 'value(status.url)') && \
 	gcloud run deploy $(SERVICE_PREFIX)-frontend \
 		--image $(REGISTRY_URL)/frontend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
+		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
 		--no-allow-unauthenticated \
 		--memory 512Mi \
 		--cpu 1 \
 		--min-instances 0 \
 		--max-instances 10 \
-		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot"
+		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot,AGENT_RUNTIME_URL=$$BACKEND_URL/api/agui"
 
 # Full build and deploy workflows
 build-backend: docker-build-backend docker-push-backend
