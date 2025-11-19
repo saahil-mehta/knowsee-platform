@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent } from "react";
+import { KeyboardEvent, useState } from "react";
 
 type ChatComposerProps = {
   value: string;
@@ -28,45 +28,61 @@ export function ChatComposer({
     }
   };
 
+  const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <div className="relative flex items-end gap-2 rounded-[26px] bg-muted/50 px-4 py-2.5 ring-offset-background focus-within:ring-2 focus-within:ring-ring/20 transition-all">
-      <button
-        type="button"
-        className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1"
-        aria-label="Attach file"
+    <div className="flex flex-col gap-2">
+      <div
+        className={`relative flex items-end gap-2 rounded-[26px] bg-muted/50 px-4 py-2.5 transition-all duration-200 ease-in-out ${isFocused || isHovered ? "bg-muted/80 shadow-lg ring-1 ring-black/5" : ""
+          }`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <PaperclipIcon />
-      </button>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={handleKeyDown}
-        rows={1}
-        placeholder="Send a message..."
-        className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus:outline-none"
-      />
-      {isLoading ? (
         <button
           type="button"
-          onClick={onStop}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 mb-0.5"
-          aria-label="Stop generating"
+          className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1"
+          aria-label="Attach file"
         >
-          <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-            <rect width="12" height="12" x="6" y="6" rx="2" />
-          </svg>
+          <PaperclipIcon />
         </button>
-      ) : (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onSend}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 mb-0.5"
-          aria-label="Send message"
-        >
-          <SendIcon />
-        </button>
-      )}
+        <textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          rows={1}
+          placeholder="Send a message..."
+          className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus:outline-none"
+        />
+        {isLoading ? (
+          <button
+            type="button"
+            onClick={onStop}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 mb-0.5"
+            aria-label="Stop generating"
+          >
+            <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <rect width="12" height="12" x="6" y="6" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onSend}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 mb-0.5"
+            aria-label="Send message"
+          >
+            <SendIcon />
+          </button>
+        )}
+      </div>
+      <div className={`px-4 text-xs text-muted-foreground/60 transition-opacity duration-200 ${isFocused || isHovered ? "opacity-100" : "opacity-0"
+        }`}>
+        Press <kbd className="font-sans">Enter</kbd> to send, <kbd className="font-sans">Shift + Enter</kbd> for new line
+      </div>
     </div>
   );
 }
