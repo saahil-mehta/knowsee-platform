@@ -436,6 +436,8 @@ $(1)-plan:
 
 $(1)-apply:
 	@printf "\n!!! REMINDER: Ensure you have built and pushed your images if this is a fresh deploy!!!\n"
+	@printf "    make build-all ENV=$(1)\n"
+	@printf "    (or individually: make build-backend ENV=$(1) / make build-frontend ENV=$(1))\n\n"
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform apply -var-file=$(TF_VARS_NAME)
 
 $(1)-output:
