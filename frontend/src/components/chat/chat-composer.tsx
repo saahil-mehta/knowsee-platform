@@ -29,10 +29,10 @@ export function ChatComposer({
   };
 
   return (
-    <div className="relative flex items-end gap-2 rounded-3xl border bg-input px-4 py-3 shadow-sm">
+    <div className="relative flex items-end gap-2 rounded-[26px] bg-muted/50 px-4 py-2.5 ring-offset-background focus-within:ring-2 focus-within:ring-ring/20 transition-all">
       <button
         type="button"
-        className="flex-shrink-0 text-muted-foreground transition hover:text-foreground"
+        className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1"
         aria-label="Attach file"
       >
         <PaperclipIcon />
@@ -43,13 +43,13 @@ export function ChatComposer({
         onKeyDown={handleKeyDown}
         rows={1}
         placeholder="Send a message..."
-        className="max-h-[200px] min-h-[20px] flex-1 resize-none bg-transparent text-sm leading-5 placeholder:text-muted-foreground focus:outline-none"
+        className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus:outline-none"
       />
       {isLoading ? (
         <button
           type="button"
           onClick={onStop}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 mb-0.5"
           aria-label="Stop generating"
         >
           <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -61,7 +61,7 @@ export function ChatComposer({
           type="button"
           disabled={disabled}
           onClick={onSend}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 mb-0.5"
           aria-label="Send message"
         >
           <SendIcon />

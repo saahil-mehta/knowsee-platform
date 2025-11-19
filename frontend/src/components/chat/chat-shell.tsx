@@ -31,9 +31,9 @@ export function ChatShell({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col px-4 py-8">
-        <div className="flex flex-1 flex-col overflow-auto">
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex h-full w-full flex-col">
+        <div className="flex flex-1 flex-col overflow-hidden relative">
           {hasMessages ? (
             <MessageList messages={messages} isLoading={isLoading} />
           ) : (
@@ -42,23 +42,27 @@ export function ChatShell({
         </div>
 
         {!hasMessages && (
-          <div className="mb-6 mt-auto">
-            <QuickActions
-              actions={quickActions}
-              onSelect={onQuickAction}
-              isLoading={isLoading}
-            />
+          <div className="mb-6 mt-auto px-4">
+            <div className="mx-auto max-w-3xl">
+              <QuickActions
+                actions={quickActions}
+                onSelect={onQuickAction}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
         )}
 
-        <div className="mt-auto pt-4">
-          <ChatComposer
-            value={inputValue}
-            onChange={onInputChange}
-            onSend={onSend}
-            onStop={onStop}
-            isLoading={isLoading}
-          />
+        <div className="mt-auto p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="mx-auto max-w-3xl w-full">
+            <ChatComposer
+              value={inputValue}
+              onChange={onInputChange}
+              onSend={onSend}
+              onStop={onStop}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
       </div>
     </div>
