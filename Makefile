@@ -8,7 +8,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRONTEND_DIR := frontend
-LOCAL_COMPOSE := docker compose -f dev/docker-compose.sagent.yml
+LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -259,7 +259,16 @@ deploy-backend:
 		--cpu 4 \
 		--min-instances 1 \
 		--max-instances 10 \
-		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu"
+		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu" && \
+	printf "\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "  ✅ Backend deployed successfully!\n\n" && \
+	printf "  You can access the backend from GCP Cloud Shell:\n" && \
+	printf "  1. Run this command:\n" && \
+	printf "     gcloud run services proxy $(SERVICE_PREFIX)-backend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "\n"
 
 deploy-frontend:
 	$(call CHECK_ENV,deploy-frontend)
@@ -278,7 +287,16 @@ deploy-frontend:
 		--cpu 1 \
 		--min-instances 0 \
 		--max-instances 10 \
-		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot,AGENT_RUNTIME_URL=$$BACKEND_URL/api/agui"
+		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot,AGENT_RUNTIME_URL=$$BACKEND_URL/api/agui" && \
+	printf "\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "  ✅ Frontend deployed successfully!\n\n" && \
+	printf "  You can access the frontend (and backend connected to it) from GCP Cloud Shell:\n" && \
+	printf "  1. Run this command:\n" && \
+	printf "     gcloud run services proxy $(SERVICE_PREFIX)-frontend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "\n"
 
 # Full build and deploy workflows
 build-backend: docker-build-backend docker-push-backend
