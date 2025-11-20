@@ -7,12 +7,12 @@ locals {
   project_iam_bindings = {
 
     # ============================================================================
-    # PROJECT EDITORS
+    # PROJECT VIEWERS
     # ============================================================================
 
-    "roles/editor" = {
+    "roles/viewer" = {
       members = [
-        "user:m.kanaujia@knowsee.co.uk"
+        "group:developers@knowsee.co.uk"
       ]
     }
 
