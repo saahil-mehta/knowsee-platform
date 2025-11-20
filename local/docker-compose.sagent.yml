@@ -18,7 +18,7 @@ services:
   sagent-frontend:
     build:
       context: ../frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.local
     container_name: sagent-frontend
     working_dir: /app
     environment:

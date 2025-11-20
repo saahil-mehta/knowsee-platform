@@ -8,7 +8,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRONTEND_DIR := frontend
-LOCAL_COMPOSE := docker compose -f dev/docker-compose.sagent.yml
+LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -225,7 +225,7 @@ docker-auth:
 docker-build-backend:
 	$(call CHECK_ENV,docker-build-backend)
 	$(call PRINT_HEADER,Building Backend Image ($(ENV)))
-	docker build -t $(REGISTRY_URL)/backend:latest \
+	docker build --platform linux/amd64 -t $(REGISTRY_URL)/backend:latest \
 		--build-arg COMMIT_SHA=$(shell git rev-parse HEAD) \
 		--build-arg AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0') \
 		.
@@ -233,7 +233,7 @@ docker-build-backend:
 docker-build-frontend:
 	$(call CHECK_ENV,docker-build-frontend)
 	$(call PRINT_HEADER,Building Frontend Image ($(ENV)))
-	docker build -t $(REGISTRY_URL)/frontend:latest ./frontend
+	docker build --platform linux/amd64 -t $(REGISTRY_URL)/frontend:latest ./frontend
 
 docker-push-backend: docker-auth
 	$(call CHECK_ENV,docker-push-backend)
@@ -253,27 +253,50 @@ deploy-backend:
 		--image $(REGISTRY_URL)/backend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
-		--allow-unauthenticated \
+		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
+		--no-allow-unauthenticated \
 		--memory 8Gi \
 		--cpu 4 \
 		--min-instances 1 \
 		--max-instances 10 \
-		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu"
+		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu" && \
+	printf "\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "  ✅ Backend deployed successfully!\n\n" && \
+	printf "  You can access the backend from GCP Cloud Shell:\n" && \
+	printf "  1. Run this command:\n" && \
+	printf "     gcloud run services proxy $(SERVICE_PREFIX)-backend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "\n"
 
 deploy-frontend:
 	$(call CHECK_ENV,deploy-frontend)
 	$(call PRINT_HEADER,Deploying Frontend to Cloud Run ($(ENV)))
 	@PROJECT_ID=$$(gcloud config get-value project) && \
+	BACKEND_URL=$$(gcloud run services describe $(SERVICE_PREFIX)-backend \
+		--region europe-west2 \
+		--format 'value(status.url)') && \
 	gcloud run deploy $(SERVICE_PREFIX)-frontend \
 		--image $(REGISTRY_URL)/frontend:latest \
 		--project $$PROJECT_ID \
 		--region europe-west2 \
-		--allow-unauthenticated \
+		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
+		--no-allow-unauthenticated \
 		--memory 512Mi \
 		--cpu 1 \
 		--min-instances 0 \
 		--max-instances 10 \
-		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot"
+		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot,AGENT_RUNTIME_URL=$$BACKEND_URL/api/agui" && \
+	printf "\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "  ✅ Frontend deployed successfully!\n\n" && \
+	printf "  You can access the frontend (and backend connected to it) from GCP Cloud Shell:\n" && \
+	printf "  1. Run this command:\n" && \
+	printf "     gcloud run services proxy $(SERVICE_PREFIX)-frontend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
+	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "\n"
 
 # Full build and deploy workflows
 build-backend: docker-build-backend docker-push-backend
@@ -435,6 +458,10 @@ $(1)-plan:
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform plan -var-file=$(TF_VARS_NAME)
 
 $(1)-apply:
+	$(SEPARATOR)
+	@printf "\n!!! REMINDER: This only creates infrastructure. !!!\n"
+	@printf "    To deploy images, run: make release-all ENV=$(1)\n\n"
+	$(SEPARATOR)
 	@cd $(TERRAFORM_ROOT)/environments/$(1) && terraform apply -var-file=$(TF_VARS_NAME)
 
 $(1)-output:
