@@ -258,7 +258,7 @@ If you're contributing code changes that don't require GCP:
    make check
    ```
 
-4. **Mock services** are available in `dev/docker-compose.yml`
+4. **Local development stack** available via `make local` (runs backend + frontend with Docker Compose)
 
 ### Scenario 6: Organisation/Team Development (General)
 
