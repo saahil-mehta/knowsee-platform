@@ -31,7 +31,7 @@ export function ChatShell({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background relative">
       <div className="flex h-full w-full flex-col">
         <div className="flex flex-1 flex-col overflow-hidden relative">
           {hasMessages ? (
@@ -42,7 +42,7 @@ export function ChatShell({
         </div>
 
         {!hasMessages && (
-          <div className="mb-6 mt-auto px-4">
+          <div className="mb-6 mt-auto px-4 pb-24">
             <div className="mx-auto max-w-3xl">
               <QuickActions
                 actions={quickActions}
@@ -53,7 +53,7 @@ export function ChatShell({
           </div>
         )}
 
-        <div className="mt-auto p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-background via-background/80 to-transparent pb-6 pt-10 z-20">
           <div className="mx-auto max-w-3xl w-full">
             <ChatComposer
               value={inputValue}

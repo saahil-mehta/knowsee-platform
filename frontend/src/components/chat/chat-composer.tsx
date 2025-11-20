@@ -10,6 +10,8 @@ type ChatComposerProps = {
   isLoading: boolean;
 };
 
+import { Button } from "@/components/ui/button";
+
 export function ChatComposer({
   value,
   onChange,
@@ -47,18 +49,20 @@ export function ChatComposer({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className={`relative flex items-end gap-2 rounded-[26px] bg-muted/50 px-4 py-2.5 transition-all duration-200 ease-in-out ${isFocused || isHovered ? "bg-muted/80 shadow-lg ring-1 ring-black/5" : ""
+        className={`relative flex items-end gap-2 rounded-3xl bg-background px-3 py-2 shadow-sm border border-border/40 transition-all duration-200 ease-in-out ${isFocused || isHovered ? "shadow-md border-border/60 ring-1 ring-black/5" : ""
           }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <button
-          type="button"
-          className="flex-shrink-0 text-muted-foreground/70 transition hover:text-foreground mb-1.5"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full text-muted-foreground/70 hover:text-foreground mb-1"
           aria-label="Attach file"
         >
           <PaperclipIcon />
-        </button>
+        </Button>
+
         <textarea
           ref={textareaRef}
           value={value}
@@ -68,34 +72,40 @@ export function ChatComposer({
           onBlur={() => setIsFocused(false)}
           rows={1}
           placeholder="Send a message..."
-          className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus:outline-none"
+          className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] leading-relaxed placeholder:text-muted-foreground/70 focus:outline-none"
         />
+
         {isLoading ? (
-          <button
-            type="button"
+          <Button
+            variant="default"
+            size="icon"
             onClick={onStop}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 mb-0.5"
+            className="h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/90 mb-1"
             aria-label="Stop generating"
           >
-            <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden="true" className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
               <rect width="12" height="12" x="6" y="6" rx="2" />
             </svg>
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={disabled}
             onClick={onSend}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 mb-0.5"
+            className={`h-8 w-8 rounded-full transition-all duration-200 mb-1 ${disabled
+                ? "bg-transparent text-muted-foreground/50"
+                : "bg-foreground text-background hover:bg-foreground/90"
+              }`}
             aria-label="Send message"
           >
             <SendIcon />
-          </button>
+          </Button>
         )}
       </div>
-      <div className={`px-4 text-xs text-muted-foreground/60 transition-opacity duration-200 ${isFocused || isHovered ? "opacity-100" : "opacity-0"
+      <div className={`px-4 text-xs text-center text-muted-foreground/40 transition-opacity duration-200 ${isFocused || isHovered ? "opacity-100" : "opacity-0"
         }`}>
-        Press <kbd className="font-sans">Enter</kbd> to send, <kbd className="font-sans">Shift + Enter</kbd> for new line
+        Press <kbd className="font-sans font-medium">Enter</kbd> to send, <kbd className="font-sans font-medium">Shift + Enter</kbd> for new line
       </div>
     </div>
   );
