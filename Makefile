@@ -44,7 +44,7 @@ define PRINT_HEADER
 endef
 
 .PHONY: \
-	help install bootstrap \
+	help install bootstrap upgrade outdated \
 	playground local-backend data-ingestion \
 	docker-auth docker-build-backend docker-build-frontend docker-push-backend docker-push-frontend \
 	deploy-backend deploy-frontend build-backend build-frontend build-all \
@@ -66,6 +66,8 @@ help:
 	$(call PRINT_HEADER,Platform Toolkit)
 	@printf "Development:\n"
 	@printf "  make install           Install uv deps + frontend packages\n"
+	@printf "  make upgrade           Upgrade all dependencies to latest compatible versions\n"
+	@printf "  make outdated          Check for outdated dependencies without upgrading\n"
 	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend     Run FastAPI backend only (:$(BACKEND_PORT))\n"
 	@printf "  make local             Start full local stack (backend + frontend)\n"
@@ -115,6 +117,86 @@ install:
 	}
 	@uv sync
 	@cd $(FRONTEND_DIR) && npm install
+
+upgrade:
+	$(call PRINT_HEADER,Upgrading Dependencies)
+	@printf "  Checking for uncommitted changes...\n"
+	@if ! git diff-index --quiet HEAD -- 2>/dev/null; then \
+		printf "\n  ⚠️  Warning: You have uncommitted changes.\n"; \
+		printf "  Consider committing or stashing before upgrading.\n\n"; \
+	else \
+		printf "  ✅ Working tree is clean\n\n"; \
+	fi
+	@printf "  Creating backup of lock files...\n"
+	@cp uv.lock uv.lock.backup 2>/dev/null || true
+	@cp $(FRONTEND_DIR)/package-lock.json $(FRONTEND_DIR)/package-lock.json.backup 2>/dev/null || true
+	@printf "  ✅ Backups created: uv.lock.backup, package-lock.json.backup\n\n"
+	@printf "  Checking outdated backend packages...\n"
+	@uv pip list --outdated 2>/dev/null | head -20 || printf "  (No outdated packages detected)\n"
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Upgrading backend Python dependencies...\n\n"
+	@uv lock --upgrade
+	@printf "\n  Installing upgraded backend packages...\n\n"
+	@uv sync
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Upgrading frontend npm packages...\n\n"
+	@cd $(FRONTEND_DIR) && npm update
+	@printf "\n  Running security audit...\n\n"
+	@cd $(FRONTEND_DIR) && npm audit --audit-level=moderate || printf "\n  ⚠️  Security issues found - review above\n"
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Upgrade Summary:\n\n"
+	@printf "  Backend Python packages:\n"
+	@if [ -f uv.lock.backup ]; then \
+		python3 -c 'import re; \
+		old = open("uv.lock.backup").read(); \
+		new = open("uv.lock").read(); \
+		old_pkgs = {m.group(1): m.group(2) for m in re.finditer(r"name = \"([^\"]+)\".*?version = \"([^\"]+)\"", old, re.DOTALL)}; \
+		new_pkgs = {m.group(1): m.group(2) for m in re.finditer(r"name = \"([^\"]+)\".*?version = \"([^\"]+)\"", new, re.DOTALL)}; \
+		changes = [(k, old_pkgs.get(k, "new"), v) for k, v in new_pkgs.items() if old_pkgs.get(k) != v]; \
+		for pkg, old_v, new_v in sorted(changes)[:15]: \
+			print(f"    {pkg}: {old_v} → {new_v}")' 2>/dev/null || printf "    No version changes detected\n"; \
+	else \
+		printf "    No backup found\n"; \
+	fi
+	@printf "\n  Frontend npm packages:\n"
+	@if [ -f $(FRONTEND_DIR)/package-lock.json.backup ]; then \
+		cd $(FRONTEND_DIR) && python3 -c 'import json, sys; \
+		old = json.load(open("package-lock.json.backup")); \
+		new = json.load(open("package-lock.json")); \
+		old_pkgs = {k: v.get("version", "") for k, v in old.get("packages", {}).items() if v.get("version")}; \
+		new_pkgs = {k: v.get("version", "") for k, v in new.get("packages", {}).items() if v.get("version")}; \
+		changes = [(k.split("node_modules/")[-1] if "node_modules/" in k else k, old_pkgs.get(k, "new"), v) for k, v in new_pkgs.items() if old_pkgs.get(k) != v and k]; \
+		for pkg, old_v, new_v in sorted(changes)[:15]: \
+			if pkg: print(f"    {pkg}: {old_v} → {new_v}")' 2>/dev/null || printf "    No version changes detected\n"; \
+	else \
+		printf "    No backup found\n"; \
+	fi
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  ✅ All dependencies upgraded successfully!\n"
+	@printf "\n  Next steps:\n"
+	@printf "    • Review changes: git diff uv.lock $(FRONTEND_DIR)/package-lock.json\n"
+	@printf "    • Run tests: make check\n"
+	@printf "    • Rollback if needed: mv uv.lock.backup uv.lock && mv $(FRONTEND_DIR)/package-lock.json.backup $(FRONTEND_DIR)/package-lock.json\n"
+	$(SEPARATOR)
+	@printf "\n"
+
+outdated:
+	$(call PRINT_HEADER,Checking Outdated Dependencies)
+	@printf "  Backend (Python):\n\n"
+	@uv pip list --outdated 2>/dev/null || printf "  ✅ All packages are up to date\n"
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Frontend (npm):\n\n"
+	@cd $(FRONTEND_DIR) && npm outdated || printf "  ✅ All packages are up to date\n"
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  To upgrade: make upgrade\n"
+	$(SEPARATOR)
+	@printf "\n"
 
 bootstrap:
 	@cd $(FRONTEND_DIR) && npm run bootstrap
@@ -446,6 +528,8 @@ validate:
 clean:
 	@find $(TERRAFORM_ROOT) -type d -name ".terraform" -prune -exec rm -rf {} + 2>/dev/null || true
 	@find $(TERRAFORM_ROOT) -type f -name ".terraform.lock.hcl" -delete 2>/dev/null || true
+	@rm -f uv.lock.backup $(FRONTEND_DIR)/package-lock.json.backup 2>/dev/null || true
+	@printf "Cleaned Terraform cache and backup files\n"
 
 define TERRAFORM_TARGETS
 $(1)-init:
