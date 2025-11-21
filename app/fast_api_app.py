@@ -53,21 +53,47 @@ provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Agent Engine session configuration
-# Use environment variable for agent name, default to project name
-agent_name = os.environ.get("AGENT_ENGINE_SESSION_NAME", "sagent")
 
-# Check if an agent with this name already exists
-existing_agents = list(agent_engines.list(filter=f"display_name={agent_name}"))
+# Agent Engine configuration
+# Get Agent Engine resource name from environment variable (set by Terraform)
+# Format: projects/{project}/locations/{location}/reasoningEngines/{id}
+agent_engine_resource_name = os.environ.get("AGENT_ENGINE_RESOURCE_NAME")
 
-if existing_agents:
-    # Use the existing agent
-    agent_engine = existing_agents[0]
-else:
-    # Create a new agent if none exists
-    agent_engine = agent_engines.create(display_name=agent_name)
+if not agent_engine_resource_name:
+    raise ValueError(
+        "AGENT_ENGINE_RESOURCE_NAME environment variable is required. "
+        "This should be set by Terraform and points to the Agent Engine instance."
+    )
 
+try:
+    # Get existing Agent Engine by resource name (no dynamic creation)
+    agent_engine = agent_engines.get(agent_engine_resource_name)
+    logger.log_struct(
+        {
+            "message": "Successfully connected to Agent Engine",
+            "resource_name": agent_engine_resource_name,
+            "display_name": agent_engine.display_name,
+        },
+        severity="INFO",
+    )
+except Exception as e:
+    logger.log_struct(
+        {
+            "message": "Failed to get Agent Engine",
+            "resource_name": agent_engine_resource_name,
+            "error": str(e),
+        },
+        severity="ERROR",
+    )
+    raise RuntimeError(
+        f"Failed to get Agent Engine '{agent_engine_resource_name}'. "
+        f"Ensure it exists in your GCP project. Error: {e}"
+    ) from e
+
+# Session and Memory service URIs (both point to same Agent Engine)
+# The Agent Engine provides both session management and memory bank services
 session_service_uri = f"agentengine://{agent_engine.resource_name}"
+memory_service_uri = f"agentengine://{agent_engine.resource_name}"
 
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
@@ -75,6 +101,7 @@ app: FastAPI = get_fast_api_app(
     artifact_service_uri=bucket_name,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
+    memory_service_uri=memory_service_uri,
 )
 app.title = "sagent"
 app.description = "API for interacting with the Agent sagent"

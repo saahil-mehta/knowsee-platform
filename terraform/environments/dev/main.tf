@@ -154,6 +154,21 @@ module "artifact_registries" {
 }
 
 # ==============================================================================
+# Vertex AI Agent Engine
+# ==============================================================================
+
+module "vertex_ai" {
+  source = "../../infra/vertex_ai"
+
+  project_id      = var.project_id
+  region          = var.region
+  resource_prefix = var.resource_prefix
+  environment     = var.environment
+
+  depends_on = [module.enabled_services]
+}
+
+# ==============================================================================
 # Discovery Engine (Vertex AI Search)
 # ==============================================================================
 
@@ -249,16 +264,18 @@ module "cloud_run_services" {
   service_account_email            = local.service_account_map[each.value.service_account_key]
   labels                           = merge(var.labels, each.value.labels)
 
-  # Replace DATA_STORE_ID placeholder with actual value
+  # Replace placeholders with actual values
   env_vars = [
     for env in each.value.env_vars :
     {
-      name  = env.name
-      value = env.name == "DATA_STORE_ID" ? module.discovery_engine.data_store_id : env.value
+      name = env.name
+      value = (env.name == "DATA_STORE_ID" ? module.discovery_engine.data_store_id :
+      env.name == "AGENT_ENGINE_RESOURCE_NAME" ? module.vertex_ai.agent_engine_resource_name :
+      env.value)
     }
   ]
 
   secret_env_vars = each.value.secret_env_vars
 
-  depends_on = [module.enabled_services, module.service_accounts, module.discovery_engine]
+  depends_on = [module.enabled_services, module.service_accounts, module.discovery_engine, module.vertex_ai]
 }

@@ -109,6 +109,7 @@ def create_agent(tools: list | None = None) -> Agent:
         Agent: Configured agent instance with specified tools.
     """
     if tools is None:
+        # Default tools: document retrieval
         tools = [retrieve_docs]
 
     return Agent(

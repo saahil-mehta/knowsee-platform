@@ -18,6 +18,16 @@ output "vertexai_pipeline_service_account_email" {
   value       = module.service_accounts["vertexai_pipeline"].email
 }
 
+output "agent_engine_resource_name" {
+  description = "Vertex AI Agent Engine resource name"
+  value       = module.vertex_ai.agent_engine_resource_name
+}
+
+output "agent_engine_id" {
+  description = "Vertex AI Agent Engine ID"
+  value       = module.vertex_ai.agent_engine_id
+}
+
 output "data_store_id" {
   description = "Vertex AI Discovery Engine data store ID"
   value       = module.discovery_engine.data_store_id

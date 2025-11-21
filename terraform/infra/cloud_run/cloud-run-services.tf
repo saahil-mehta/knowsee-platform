@@ -22,6 +22,10 @@ locals {
         {
           name  = "DATA_STORE_REGION"
           value = var.data_store_region
+        },
+        {
+          name  = "AGENT_ENGINE_RESOURCE_NAME"
+          value = "PLACEHOLDER_AGENT_ENGINE_RESOURCE_NAME"
         }
       ]
       secret_env_vars = []

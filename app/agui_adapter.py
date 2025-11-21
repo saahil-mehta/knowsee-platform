@@ -18,6 +18,7 @@ AGUI_APP_NAME = os.getenv("AGUI_APP_NAME", "knowsee_copilot")
 AGUI_DEFAULT_USER = os.getenv("AGUI_DEFAULT_USER", "web-user")
 AGUI_SESSION_TIMEOUT = int(os.getenv("AGUI_SESSION_TIMEOUT", "3600"))
 
+# AGUI tools: document retrieval
 AGUI_AGENT_TOOLS: tuple[Any, ...] = (retrieve_docs,)
 
 
@@ -31,8 +32,9 @@ def _build_instruction() -> str:
 
 
 def create_llm_agent() -> LlmAgent:
-    """Create the underlying ADK LLM agent the middleware will wrap."""
-
+    """
+    Create the underlying ADK LLM agent the middleware will wrap.
+    """
     return LlmAgent(
         name=AGUI_AGENT_NAME,
         model=LLM,
@@ -43,6 +45,12 @@ def create_llm_agent() -> LlmAgent:
 
 @lru_cache(maxsize=1)
 def _get_adk_agent() -> ADKAgent:
+    """
+    Create the AGUI adapter with in-memory session services.
+
+    Uses in-memory services for CopilotKit UI sessions.
+    The main ADK endpoint (via get_fast_api_app) uses Agent Engine sessions.
+    """
     return ADKAgent(
         adk_agent=create_llm_agent(),
         app_name=AGUI_APP_NAME,

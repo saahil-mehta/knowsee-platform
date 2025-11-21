@@ -8,7 +8,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRONTEND_DIR := frontend
-LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml
+LOCAL_COMPOSE := docker compose --env-file .env -f local/docker-compose.sagent.yml
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -324,7 +324,7 @@ data-ingestion:
 
 local:
 	$(call PRINT_HEADER,Local Stack (Backend + Frontend))
-	@set -a && source .env && $(LOCAL_COMPOSE) up -d --build
+	@$(LOCAL_COMPOSE) up -d --build
 	@printf "\n"
 	@printf "  Services:\n"
 	@printf "    Frontend (CopilotKit)  http://localhost:3000\n"
@@ -346,7 +346,7 @@ local:
 	@printf "\n"
 
 local-down:
-	@set -a && source .env && $(LOCAL_COMPOSE) down
+	@$(LOCAL_COMPOSE) down
 
 local-logs:
 	@$(LOCAL_COMPOSE) logs -f
@@ -361,7 +361,7 @@ local-status:
 	@$(LOCAL_COMPOSE) ps
 
 local-restart:
-	@set -a && source .env && $(LOCAL_COMPOSE) restart
+	@$(LOCAL_COMPOSE) restart
 
 # ==============================================================================
 # Frontend workflows (Next.js)
