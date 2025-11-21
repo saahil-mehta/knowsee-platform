@@ -208,3 +208,4 @@ frontend/.next/
 
 # Local memory
 .scratchpad.txt
+*.backup

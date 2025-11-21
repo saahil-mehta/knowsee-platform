@@ -8,6 +8,7 @@ services:
       - ALLOW_ORIGINS=http://localhost:3000
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-europe-west2}
     ports:
       - "8000:8080"
     volumes:

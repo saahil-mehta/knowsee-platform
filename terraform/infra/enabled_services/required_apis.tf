@@ -6,6 +6,7 @@ locals {
   required_apis = [
     "aiplatform.googleapis.com",
     "bigquery.googleapis.com",
+    "cloudasset.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "cloudtrace.googleapis.com",
     "discoveryengine.googleapis.com",
