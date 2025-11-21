@@ -1,4 +1,5 @@
 ## Guiding Principles
+- Redundancy is your enemy. KISS, DRY, YAGNI.
 - Reliability and Simplicity are your mottos.
 - Always find the root cause and think systems for the easiest solution. 
 - It is critical to employ simplified and systems design thinking.
@@ -6,6 +7,11 @@
 - Never do everything at once. 
 - Move in small increments, one small feature -> implement > test > verify and then build on it. 
 - Always use project tooling. For example: make stack instead of individual docker commands. So we verify and test everything.
+
+## Commit Policy
+- Use .gitmessage.txt for guidance
+- Always group by theme of the changes
+- Never co-auth
 
 ## Output Policy
 - Never use emojis.

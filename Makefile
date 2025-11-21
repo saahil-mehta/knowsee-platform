@@ -50,6 +50,7 @@ endef
 	deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
+	drift \ 
 	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
@@ -84,6 +85,7 @@ help:
 	@printf "  make release-all ENV=<env>       Release both services\n"
 	@printf "\n"
 	@printf "Terraform (per environment: cicd, dev, staging, prod):\n"
+	@printf "  make drift [ENV=<env>] Check resource drift (defaults to all envs in current GCP project)\n"
 	@printf "  make <env>-init        Initialise Terraform for environment\n"
 	@printf "  make <env>-validate    Validate Terraform configuration\n"
 	@printf "  make <env>-plan        Plan infrastructure changes\n"
@@ -444,6 +446,17 @@ local-status:
 
 local-restart:
 	@set -a && source .env && $(LOCAL_COMPOSE) restart
+
+# ==============================================================================
+# Drift Check
+# ==============================================================================
+
+drift:
+	@if [ -n "$(ENV)" ]; then \
+		uv run python scripts/detect_drift.py --environment $(ENV); \
+	else \
+		uv run python scripts/detect_drift.py; \
+	fi
 
 # ==============================================================================
 # Frontend workflows (Next.js)
