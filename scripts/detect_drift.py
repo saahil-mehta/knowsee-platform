@@ -45,8 +45,8 @@ def scan_agent_engines(project_id: str, regions: list[str], environment: str | N
                     "created": engine.create_time.strftime("%Y-%m-%d"),
                     "age_days": age_days,
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Failed to scan region {region}: {e}", file=sys.stderr)
     return resources
 
 
