@@ -50,8 +50,8 @@ endef
 	deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
-	drift \ 
-	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
+	drift \
+	frontend-install frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-migrate frontend-db-studio \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -74,6 +74,15 @@ help:
 	@printf "  make local             Start full local stack (backend + frontend)\n"
 	@printf "  make local-down        Stop local stack\n"
 	@printf "  make local-logs        Stream local stack logs\n"
+	@printf "\n"
+	@printf "Frontend (Next.js Chatbot):\n"
+	@printf "  make frontend-install      Install frontend dependencies\n"
+	@printf "  make frontend-dev          Run frontend dev server (:3000)\n"
+	@printf "  make frontend-build        Build frontend for production\n"
+	@printf "  make frontend-db-migrate   Run database migrations\n"
+	@printf "  make frontend-db-studio    Open Drizzle Studio for database\n"
+	@printf "  make frontend-lint         Lint frontend code\n"
+	@printf "  make frontend-test         Run frontend tests\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -118,7 +127,7 @@ install:
 		source $$HOME/.local/bin/env; \
 	}
 	@uv sync
-	@cd $(FRONTEND_DIR) && npm install
+	@cd $(FRONTEND_DIR) && pnpm install
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
@@ -462,20 +471,29 @@ drift:
 # Frontend workflows (Next.js)
 # ==============================================================================
 
+frontend-install:
+	@cd $(FRONTEND_DIR) && pnpm install
+
 frontend-dev:
-	@cd $(FRONTEND_DIR) && npm run dev
+	@cd $(FRONTEND_DIR) && pnpm dev
 
 frontend-build:
-	@cd $(FRONTEND_DIR) && npm run build
+	@cd $(FRONTEND_DIR) && pnpm build
 
 frontend-typecheck:
-	@cd $(FRONTEND_DIR) && npm run typecheck
+	@cd $(FRONTEND_DIR) && pnpm tsc --noEmit
 
 frontend-lint:
-	@cd $(FRONTEND_DIR) && npm run lint
+	@cd $(FRONTEND_DIR) && pnpm lint
 
 frontend-test:
-	@cd $(FRONTEND_DIR) && npm run test
+	@cd $(FRONTEND_DIR) && pnpm test
+
+frontend-db-migrate:
+	@cd $(FRONTEND_DIR) && pnpm db:migrate
+
+frontend-db-studio:
+	@cd $(FRONTEND_DIR) && pnpm db:studio
 
 # ==============================================================================
 # Quality gates
