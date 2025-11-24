@@ -51,7 +51,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend-install frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-migrate frontend-db-studio \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-studio \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -76,10 +76,11 @@ help:
 	@printf "  make local-logs        Stream local stack logs\n"
 	@printf "\n"
 	@printf "Frontend (Next.js Chatbot):\n"
+	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
+	@printf "  make frontend-down         Stop frontend database\n"
+	@printf "  make frontend-clean        Stop database and remove all data\n"
 	@printf "  make frontend-install      Install frontend dependencies\n"
-	@printf "  make frontend-dev          Run frontend dev server (:3000)\n"
 	@printf "  make frontend-build        Build frontend for production\n"
-	@printf "  make frontend-db-migrate   Run database migrations\n"
 	@printf "  make frontend-db-studio    Open Drizzle Studio for database\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
 	@printf "  make frontend-test         Run frontend tests\n"
@@ -471,11 +472,56 @@ drift:
 # Frontend workflows (Next.js)
 # ==============================================================================
 
+frontend:
+	$(call PRINT_HEADER,Frontend Development)
+	@printf "  Setting up PostgreSQL database...\n\n"
+	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Running database migrations...\n\n"
+	@cd $(FRONTEND_DIR) && pnpm db:migrate
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Setting up test user...\n\n"
+	@USER_COUNT=$$(docker exec knowsee-frontend-db psql -U postgres -d chatbot -tAc 'SELECT COUNT(*) FROM "User"' 2>/dev/null || echo "0"); \
+	if [ "$$USER_COUNT" -eq 0 ]; then \
+		read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
+		USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+		read -sp "  Enter password (default: password): " USER_PASSWORD; \
+		USER_PASSWORD=$${USER_PASSWORD:-password}; \
+		printf "\n"; \
+		cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+		printf "\n  Test user created:\n"; \
+		printf "    Email:    $$USER_EMAIL\n"; \
+		printf "    Password: $$USER_PASSWORD\n"; \
+	else \
+		printf "  Users already exist, skipping user creation\n"; \
+	fi
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Starting frontend development server...\n\n"
+	@printf "  Frontend:  http://localhost:3000\n"
+	@printf "  Database:  postgresql://postgres:postgres@localhost:5432/chatbot\n"
+	@printf "\n"
+	@printf "  Commands:\n"
+	@printf "    make frontend-down         Stop database\n"
+	@printf "    make frontend-db-studio    Open Drizzle Studio\n"
+	@printf "\n"
+	$(SEPARATOR)
+	@cd $(FRONTEND_DIR) && pnpm dev
+
+frontend-down:
+	@printf "Stopping frontend database...\n"
+	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down
+	@printf "Database stopped\n"
+
+frontend-clean:
+	@printf "Stopping frontend database and removing all data...\n"
+	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down -v
+	@printf "Database and data removed\n"
+
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
-
-frontend-dev:
-	@cd $(FRONTEND_DIR) && pnpm dev
 
 frontend-build:
 	@cd $(FRONTEND_DIR) && pnpm build
@@ -488,9 +534,6 @@ frontend-lint:
 
 frontend-test:
 	@cd $(FRONTEND_DIR) && pnpm test
-
-frontend-db-migrate:
-	@cd $(FRONTEND_DIR) && pnpm db:migrate
 
 frontend-db-studio:
 	@cd $(FRONTEND_DIR) && pnpm db:studio
