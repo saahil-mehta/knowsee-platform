@@ -11,9 +11,8 @@ A practical guide to the technologies powering the Knowsee frontend.
 3. [Vitest](#vitest)
 4. [Playwright](#playwright)
 5. [Vercel AI SDK Chatbot](#vercel-ai-sdk-chatbot)
-6. [Drizzle ORM](#drizzle-orm)
-7. [Bun (bonus)](#bun)
-8. [How They Fit Together](#how-they-fit-together)
+6. [Bun (bonus)](#bun)
+7. [How They Fit Together](#how-they-fit-together)
 
 ---
 
@@ -185,10 +184,10 @@ User Input → React UI → API Route → AI Provider → Stream Response → UI
    - `app/(chat)/` - Chat-related pages
    - `app/api/` - API endpoints
 
-3. **Database (Drizzle ORM)**
-   - `lib/db/schema.ts` - Database schema
-   - `lib/db/queries.ts` - Database operations
-   - PostgreSQL for persistence
+3. **Database (Backend API)**
+   - `lib/db/types.ts` - TypeScript type definitions
+   - `lib/db/queries.ts` - API calls to Python backend
+   - SQLAlchemy + PostgreSQL in backend
 
 4. **Authentication (NextAuth)**
    - `app/(auth)/` - Auth pages and config
@@ -204,115 +203,6 @@ User Input → React UI → API Route → AI Provider → Stream Response → UI
 5. UI updates in real-time
 6. Message saved to database
 ```
-
----
-
-## Drizzle ORM
-
-**What:** Type-safe database toolkit. Write TypeScript, get SQL.
-
-**Why Drizzle:**
-- Full type safety from schema to query results
-- SQL-like syntax (if you know SQL, you know Drizzle)
-- Lightweight (~50KB vs Prisma's ~2MB)
-- Generates migration SQL files
-
-### Schema Definition (`lib/db/schema.ts`)
-
-Define tables in TypeScript instead of SQL DDL:
-
-```typescript
-import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
-
-// This TypeScript...
-export const user = pgTable("User", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  email: varchar("email", { length: 64 }).notNull(),
-  password: varchar("password", { length: 64 }),
-});
-
-// ...becomes this SQL:
-// CREATE TABLE "User" (
-//   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-//   email VARCHAR(64) NOT NULL,
-//   password VARCHAR(64)
-// );
-```
-
-**Bonus:** TypeScript types are inferred automatically:
-```typescript
-import { InferSelectModel } from "drizzle-orm";
-
-type User = InferSelectModel<typeof user>;
-// Equivalent to: { id: string; email: string; password: string | null }
-```
-
-### Queries (`lib/db/queries.ts`)
-
-Type-safe queries instead of raw SQL strings:
-
-```typescript
-import { eq, and, desc } from "drizzle-orm";
-
-// SELECT
-await db.select().from(user).where(eq(user.email, email));
-
-// INSERT
-await db.insert(user).values({ email, password: hashedPassword });
-
-// UPDATE
-await db.update(chat).set({ title: newTitle }).where(eq(chat.id, id));
-
-// DELETE
-await db.delete(chat).where(eq(chat.id, id));
-
-// Complex queries
-await db
-  .select()
-  .from(chat)
-  .where(and(eq(chat.userId, id), eq(chat.visibility, "public")))
-  .orderBy(desc(chat.createdAt))
-  .limit(10);
-```
-
-**Why this matters:** Typo `user.emial`? TypeScript catches it at compile time, not runtime.
-
-### Migrations
-
-When you change the schema:
-
-```bash
-pnpm db:generate    # Creates migration SQL in lib/db/migrations/
-pnpm db:migrate     # Applies migrations to database
-pnpm db:studio      # Visual database browser (like pgAdmin)
-```
-
-### Connection (`drizzle.config.ts`)
-
-```typescript
-export default defineConfig({
-  schema: "./lib/db/schema.ts",    // Where tables are defined
-  out: "./lib/db/migrations",      // Where migration SQL goes
-  dialect: "postgresql",           // Database type
-  dbCredentials: {
-    url: process.env.POSTGRES_URL, // Connection string from env
-  },
-});
-```
-
-### Local vs Production
-
-Only the connection string changes:
-
-```bash
-# Local (Docker)
-POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/chatbot
-
-# Production (same Drizzle code, different database)
-POSTGRES_URL=postgresql://user:pass@prod-host:5432/chatbot
-```
-
-**Configuration:** `drizzle.config.ts`
 
 ---
 
@@ -385,7 +275,6 @@ pnpm run dev     ≈  bun run dev
 | Vitest | Unit testing | `vitest.config.ts` | `pnpm test:unit` |
 | Playwright | E2E testing | `playwright.config.ts` | `pnpm test:e2e` |
 | Next.js | React framework | `next.config.ts` | `pnpm dev` |
-| Drizzle | Database ORM | `drizzle.config.ts` | `pnpm db:migrate` |
 
 ---
 
@@ -396,5 +285,5 @@ pnpm run dev     ≈  bun run dev
 - [Vitest Guide](https://vitest.dev/guide/)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
 - [Vercel AI SDK](https://sdk.vercel.ai/docs)
-- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
 - [Next.js Documentation](https://nextjs.org/docs)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/) (Backend ORM)

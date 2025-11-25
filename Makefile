@@ -51,7 +51,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-studio \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -81,7 +81,7 @@ help:
 	@printf "  make frontend-clean        Stop database and remove all data\n"
 	@printf "  make frontend-install      Install frontend dependencies\n"
 	@printf "  make frontend-build        Build frontend for production\n"
-	@printf "  make frontend-db-studio    Open Drizzle Studio for database\n"
+	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
 	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
 	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
@@ -481,10 +481,6 @@ frontend:
 	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh
 	@printf "\n"
 	$(SEPARATOR)
-	@printf "  Running database migrations...\n\n"
-	@cd $(FRONTEND_DIR) && pnpm db:migrate
-	@printf "\n"
-	$(SEPARATOR)
 	@printf "  Setting up test user...\n\n"
 	@USER_COUNT=$$(docker exec knowsee-frontend-db psql -U postgres -d chatbot -tAc 'SELECT COUNT(*) FROM "User"' 2>/dev/null || echo "0"); \
 	if [ "$$USER_COUNT" -eq 0 ]; then \
@@ -508,7 +504,7 @@ frontend:
 	@printf "\n"
 	@printf "  Commands:\n"
 	@printf "    make frontend-down         Stop database\n"
-	@printf "    make frontend-db-studio    Open Drizzle Studio\n"
+	@printf "    make frontend-db-psql      Open PostgreSQL CLI\n"
 	@printf "\n"
 	$(SEPARATOR)
 	@cd $(FRONTEND_DIR) && pnpm dev
@@ -545,8 +541,8 @@ frontend-test-unit:
 frontend-test-e2e:
 	@cd $(FRONTEND_DIR) && pnpm test:e2e
 
-frontend-db-studio:
-	@cd $(FRONTEND_DIR) && pnpm db:studio
+frontend-db-psql:
+	@docker exec -it knowsee-frontend-db psql -U postgres -d chatbot
 
 # ==============================================================================
 # Quality gates

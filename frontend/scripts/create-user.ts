@@ -1,8 +1,13 @@
+/**
+ * Create a user via the backend API.
+ *
+ * Usage:
+ *   npx tsx scripts/create-user.ts [email] [password]
+ *
+ * Requires the backend to be running at BACKEND_URL (default: http://localhost:8000)
+ */
+
 import { config } from "dotenv";
-import { hash } from "bcrypt-ts";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { user } from "../lib/db/schema";
 
 config({
   path: ".env.local",
@@ -11,25 +16,28 @@ config({
 const email = process.argv[2] || "test@example.com";
 const password = process.argv[3] || "password";
 
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+
 async function createUser() {
-  if (!process.env.POSTGRES_URL) {
-    throw new Error("POSTGRES_URL is not defined");
-  }
-
-  const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
-  const db = drizzle(connection);
-
   console.log(`Creating user: ${email}`);
 
-  const hashedPassword = await hash(password, 10);
+  const response = await fetch(
+    `${BACKEND_URL}/api/db/users?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
-  await db.insert(user).values({
-    email,
-    password: hashedPassword,
-  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to create user: ${response.status} ${response.statusText} - ${text}`);
+  }
 
-  console.log("User created successfully");
-  await connection.end();
+  const user = await response.json();
+  console.log("User created successfully:", user.email);
   process.exit(0);
 }
 
