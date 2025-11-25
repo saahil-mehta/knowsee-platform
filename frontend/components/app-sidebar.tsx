@@ -67,9 +67,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   setOpenMobile(false);
                 }}
               >
-                <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
-                  Chatbot
-                </span>
+                <span className="cursor-pointer rounded-md pl-2 pr-3 font-serif text-2xl hover:bg-muted overflow-visible"><span className="font-normal">Know</span><span className="-ml-0.5 font-light italic opacity-70">see.</span></span>
               </Link>
               <div className="flex flex-row gap-1">
                 {user && (
