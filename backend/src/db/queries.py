@@ -4,7 +4,7 @@ All functions are async and use SQLAlchemy with asyncpg.
 Each function mirrors the exact behavior of its Drizzle counterpart.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -59,7 +59,7 @@ async def save_chat(
     """Create a new chat."""
     chat = Chat(
         id=id,
-        createdAt=datetime.utcnow(),
+        createdAt=datetime.now(timezone.utc),
         userId=user_id,
         title=title,
         visibility=visibility,
@@ -172,7 +172,7 @@ async def save_messages(session: AsyncSession, messages: list[dict[str, Any]]) -
             role=msg["role"],
             parts=msg["parts"],
             attachments=msg.get("attachments", []),
-            createdAt=msg.get("createdAt", datetime.utcnow()),
+            createdAt=msg.get("createdAt", datetime.now(timezone.utc)),
         )
         for msg in messages
     ]
@@ -218,7 +218,7 @@ async def get_message_count_by_user_id(
     session: AsyncSession, user_id: UUID, difference_in_hours: int
 ) -> int:
     """Get count of user messages within a time window (for rate limiting)."""
-    cutoff = datetime.utcnow() - timedelta(hours=difference_in_hours)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=difference_in_hours)
 
     result = await session.execute(
         select(func.count(Message.id))
@@ -286,7 +286,7 @@ async def save_document(
     """Create a new document version."""
     doc = Document(
         id=id,
-        createdAt=datetime.utcnow(),
+        createdAt=datetime.now(timezone.utc),
         title=title,
         kind=kind,
         content=content,
@@ -355,7 +355,7 @@ async def save_suggestions(
             description=s.get("description"),
             isResolved=s.get("isResolved", False),
             userId=s["userId"],
-            createdAt=s.get("createdAt", datetime.utcnow()),
+            createdAt=s.get("createdAt", datetime.now(timezone.utc)),
         )
         for s in suggestions
     ]
@@ -379,7 +379,7 @@ async def get_suggestions_by_document_id(
 
 async def create_stream_id(session: AsyncSession, stream_id: UUID, chat_id: UUID) -> Stream:
     """Create a new stream record."""
-    stream = Stream(id=stream_id, chatId=chat_id, createdAt=datetime.utcnow())
+    stream = Stream(id=stream_id, chatId=chat_id, createdAt=datetime.now(timezone.utc))
     session.add(stream)
     await session.flush()
     return stream

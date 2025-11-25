@@ -46,7 +46,7 @@ class Chat(Base):
     __tablename__ = "Chat"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     userId: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("User.id"), nullable=False)
     visibility: Mapped[str] = mapped_column(String, nullable=False, default="private")
@@ -75,7 +75,7 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String, nullable=False)
     parts: Mapped[Any] = mapped_column(JSONB, nullable=False)
     attachments: Mapped[Any] = mapped_column(JSONB, nullable=False)
-    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     chat: Mapped["Chat"] = relationship(back_populates="messages", lazy="selectin")
@@ -106,7 +106,7 @@ class Document(Base):
     __tablename__ = "Document"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    createdAt: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
+    createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Note: Drizzle schema defines this as varchar("text", ...) so the DB column is "text"
@@ -129,13 +129,13 @@ class Suggestion(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     documentId: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    documentCreatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    documentCreatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     originalText: Mapped[str] = mapped_column(Text, nullable=False)
     suggestedText: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     isResolved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     userId: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("User.id"), nullable=False)
-    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Composite foreign key constraint
     __table_args__ = (
@@ -161,7 +161,7 @@ class Stream(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     chatId: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("Chat.id"), nullable=False)
-    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     chat: Mapped["Chat"] = relationship(back_populates="streams", lazy="selectin")
