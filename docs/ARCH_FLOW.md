@@ -9,7 +9,7 @@ Knowsee Platform Stack Flow
                              │
                              ▼
   ┌─────────────────────────────────────────────────────────────────────┐
-  │                    NEXT.JS (Port 3001)                               │
+  │                    NEXT.JS (Port 3000)                               │
   │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │
   │  │   NextAuth      │  │  API Routes     │  │  Server Actions     │  │
   │  │   (Sessions)    │  │  /api/*         │  │  (form handling)    │  │
@@ -94,22 +94,33 @@ Knowsee Platform Stack Flow
   │   │   ├── api/backend.ts        # Python API client
   │   │   └── db/
   │   │       ├── queries.ts        # Calls Python backend
-  │   │       └── schema.ts         # TypeScript types (kept)
+  │   │       └── types.ts          # TypeScript type definitions
   │   └── app/
   │       ├── (auth)/               # Login/register
   │       └── (chat)/api/           # Chat API routes
   │
-  └── backend/alembic/              # DB migrations (Python owns)
+  └── backend/alembic/              # Alembic DB migrations
+      └── versions/                 # Migration scripts
 
    Key Commands
 
-  | Command                 | What it does                         |
-  |-------------------------|--------------------------------------|
-  | make local-backend      | Starts Python on :8000               |
-  | make frontend           | Starts PostgreSQL + Next.js on :3001 |
-  | make backend-lint       | Runs ruff + mypy on Python           |
-  | make frontend-typecheck | Runs tsc on TypeScript               |
-  | make check              | Full CI pipeline                     |
+  | Command                 | What it does                           |
+  |-------------------------|----------------------------------------|
+  | make local-backend      | Starts Python on :8000                 |
+  | make frontend           | Starts PostgreSQL + Next.js on :3000   |
+  | make backend-lint       | Runs ruff + mypy on Python             |
+  | make frontend-typecheck | Runs tsc on TypeScript                 |
+  | make frontend-build     | Production build of Next.js            |
+  | make check              | Full CI pipeline                       |
+
+  Database Migrations (Alembic)
+
+  | Command                                              | What it does                    |
+  |------------------------------------------------------|---------------------------------|
+  | cd backend && alembic revision -m "description"      | Create new migration            |
+  | cd backend && alembic upgrade head                   | Apply all pending migrations    |
+  | cd backend && alembic downgrade -1                   | Rollback one migration          |
+  | cd backend && alembic current                        | Show current revision           |
 
   Environment Variables
 
@@ -119,7 +130,6 @@ Knowsee Platform Stack Flow
 
   frontend/.env.local (Next.js):
   BACKEND_URL=http://localhost:8000
-  POSTGRES_URL=...  # Still needed for Drizzle migrations
   AUTH_SECRET=...
 
   Why This Architecture?
