@@ -291,7 +291,7 @@ playground:
 	uv run adk web . --port $(PLAYGROUND_PORT) --reload_agents
 
 local-backend:
-	uv run uvicorn app.fast_api_app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
+	uv run uvicorn backend.src.app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
 
 # ==============================================================================
 # Docker Build and Deploy
