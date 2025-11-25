@@ -56,11 +56,13 @@ def stream_langgraph_response(
                             yield format_sse({"type": "text-start", "id": text_stream_id})
                             text_started = True
 
-                        yield format_sse({
-                            "type": "text-delta",
-                            "id": text_stream_id,
-                            "delta": content,
-                        })
+                        yield format_sse(
+                            {
+                                "type": "text-delta",
+                                "id": text_stream_id,
+                                "delta": content,
+                            }
+                        )
                         accumulated_content += content
 
         # End text stream
@@ -68,28 +70,34 @@ def stream_langgraph_response(
             yield format_sse({"type": "text-end", "id": text_stream_id})
 
         # Emit finish event
-        yield format_sse({
-            "type": "finish",
-            "messageMetadata": {
-                "finishReason": "stop",
-            },
-        })
+        yield format_sse(
+            {
+                "type": "finish",
+                "messageMetadata": {
+                    "finishReason": "stop",
+                },
+            }
+        )
 
     except Exception as e:
         # Handle errors gracefully
         if not text_started:
             yield format_sse({"type": "text-start", "id": text_stream_id})
 
-        yield format_sse({
-            "type": "text-delta",
-            "id": text_stream_id,
-            "delta": f"Error: {str(e)}",
-        })
+        yield format_sse(
+            {
+                "type": "text-delta",
+                "id": text_stream_id,
+                "delta": f"Error: {str(e)}",
+            }
+        )
         yield format_sse({"type": "text-end", "id": text_stream_id})
-        yield format_sse({
-            "type": "finish",
-            "messageMetadata": {"finishReason": "error"},
-        })
+        yield format_sse(
+            {
+                "type": "finish",
+                "messageMetadata": {"finishReason": "error"},
+            }
+        )
 
     # Signal end of stream
     yield "data: [DONE]\n\n"

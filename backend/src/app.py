@@ -1,6 +1,6 @@
 """FastAPI application exposing the LangGraph chatbot."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
+from backend.src.api import router as db_router
 from backend.src.graph import chatbot_graph
 from backend.src.stream import create_streaming_response
 
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include database API routes
+app.include_router(db_router)
 
 
 # Models for Vercel AI SDK compatibility
@@ -109,25 +113,14 @@ async def chat_simple(request: SimpleChatRequest) -> SimpleChatResponse:
         SimpleChatResponse with the AI-generated response.
     """
     try:
-        result = chatbot_graph.invoke({
-            "messages": [HumanMessage(content=request.message)]
-        })
+        result = chatbot_graph.invoke({"messages": [HumanMessage(content=request.message)]})
 
-        ai_messages = [
-            msg for msg in result["messages"]
-            if isinstance(msg, AIMessage)
-        ]
+        ai_messages = [msg for msg in result["messages"] if isinstance(msg, AIMessage)]
 
         if not ai_messages:
-            raise HTTPException(
-                status_code=500,
-                detail="No response generated"
-            )
+            raise HTTPException(status_code=500, detail="No response generated")
 
         return SimpleChatResponse(response=ai_messages[-1].content)
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing request: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}") from e
