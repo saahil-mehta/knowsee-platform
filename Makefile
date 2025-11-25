@@ -51,7 +51,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-studio \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-studio \
 	backend-test backend-lint test lint check ci \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -83,7 +83,9 @@ help:
 	@printf "  make frontend-build        Build frontend for production\n"
 	@printf "  make frontend-db-studio    Open Drizzle Studio for database\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
-	@printf "  make frontend-test         Run frontend tests\n"
+	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
+	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
+	@printf "  make frontend-test-e2e     Run frontend e2e tests (requires server)\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -129,6 +131,7 @@ install:
 	}
 	@uv sync
 	@cd $(FRONTEND_DIR) && pnpm install
+	@cd $(FRONTEND_DIR) && pnpm exec playwright install --with-deps chromium
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
@@ -522,6 +525,7 @@ frontend-clean:
 
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
+	@cd $(FRONTEND_DIR) && pnpm exec playwright install --with-deps chromium
 
 frontend-build:
 	@cd $(FRONTEND_DIR) && pnpm build
@@ -534,6 +538,12 @@ frontend-lint:
 
 frontend-test:
 	@cd $(FRONTEND_DIR) && pnpm test
+
+frontend-test-unit:
+	@cd $(FRONTEND_DIR) && pnpm test:unit
+
+frontend-test-e2e:
+	@cd $(FRONTEND_DIR) && pnpm test:e2e
 
 frontend-db-studio:
 	@cd $(FRONTEND_DIR) && pnpm db:studio
