@@ -1,11 +1,15 @@
 """FastAPI application exposing the LangGraph chatbot."""
 
+from typing import Any, Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
 from backend.src.graph import chatbot_graph
+from backend.src.stream import create_streaming_response
 
 app = FastAPI(
     title="Knowsee Chatbot API",
@@ -16,21 +20,56 @@ app = FastAPI(
 # CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-class ChatRequest(BaseModel):
-    """Request model for chat endpoint."""
+# Models for Vercel AI SDK compatibility
+class MessagePart(BaseModel):
+    """A part of a message (text, file, tool, etc.)."""
+
+    type: str
+    text: Optional[str] = None
+    # Allow additional fields for tool parts, files, etc.
+
+    class Config:
+        extra = "allow"
+
+
+class ChatMessage(BaseModel):
+    """A chat message from the frontend."""
+
+    role: str
+    content: Optional[str] = None
+    parts: Optional[list[MessagePart]] = None
+
+    class Config:
+        extra = "allow"
+
+
+class StreamingChatRequest(BaseModel):
+    """Request model for streaming chat endpoint (Vercel AI SDK format)."""
+
+    id: str
+    message: ChatMessage
+    selectedChatModel: Optional[str] = None
+    selectedVisibilityType: Optional[str] = None
+
+    class Config:
+        extra = "allow"
+
+
+class SimpleChatRequest(BaseModel):
+    """Request model for simple chat endpoint."""
 
     message: str
 
 
-class ChatResponse(BaseModel):
-    """Response model for chat endpoint."""
+class SimpleChatResponse(BaseModel):
+    """Response model for simple chat endpoint."""
 
     response: str
 
@@ -41,23 +80,39 @@ async def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
-    """Process a chat message and return the response.
+@app.post("/api/chat")
+async def chat_stream(request: StreamingChatRequest) -> StreamingResponse:
+    """Process a chat message and stream the response.
+
+    This endpoint implements the Vercel AI SDK Data Stream Protocol.
+
+    Args:
+        request: Chat request from the frontend.
+
+    Returns:
+        StreamingResponse with SSE-formatted events.
+    """
+    # Convert the message to the format expected by the stream handler
+    messages = [request.message.model_dump()]
+
+    return create_streaming_response(messages)
+
+
+@app.post("/chat", response_model=SimpleChatResponse)
+async def chat_simple(request: SimpleChatRequest) -> SimpleChatResponse:
+    """Process a chat message and return the response (non-streaming).
 
     Args:
         request: Chat request containing the user message.
 
     Returns:
-        ChatResponse with the AI-generated response.
+        SimpleChatResponse with the AI-generated response.
     """
     try:
-        # Invoke the graph with the user message
         result = chatbot_graph.invoke({
             "messages": [HumanMessage(content=request.message)]
         })
 
-        # Extract the AI response from the messages
         ai_messages = [
             msg for msg in result["messages"]
             if isinstance(msg, AIMessage)
@@ -69,7 +124,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
                 detail="No response generated"
             )
 
-        return ChatResponse(response=ai_messages[-1].content)
+        return SimpleChatResponse(response=ai_messages[-1].content)
 
     except Exception as e:
         raise HTTPException(

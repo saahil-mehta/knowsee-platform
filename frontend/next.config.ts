@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Proxy API calls to Python backend in development
+  async rewrites() {
+    return [
+      {
+        source: "/api/chat",
+        destination:
+          process.env.NODE_ENV === "development"
+            ? "http://127.0.0.1:8000/api/chat"
+            : "/api/chat",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
