@@ -59,7 +59,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql frontend-db-query \
 	backend-test backend-lint test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -90,6 +90,7 @@ help:
 	@printf "  make frontend-install      Install frontend dependencies\n"
 	@printf "  make frontend-build        Build frontend for production\n"
 	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
+	@printf "  make frontend-db-query     Show database summary and recent data\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
 	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
 	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
@@ -533,6 +534,34 @@ frontend-test-e2e:
 
 frontend-db-psql:
 	@docker exec -it knowsee-frontend-db psql -U postgres -d chatbot
+
+frontend-db-query:
+	@if ! docker ps --format '{{.Names}}' | grep -q '^knowsee-frontend-db$$'; then \
+		printf "\n  Database not running.\n\n"; \
+		printf "  Start it with: make frontend\n\n"; \
+		exit 1; \
+	fi
+	@printf "\n  Database Summary\n"
+	@printf "$(SEPARATOR_LINE)\n\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT 'User' as table_name, COUNT(*) as rows FROM \"User\" \
+		UNION ALL SELECT 'Chat', COUNT(*) FROM \"Chat\" \
+		UNION ALL SELECT 'Message_v2', COUNT(*) FROM \"Message_v2\" \
+		UNION ALL SELECT 'Document', COUNT(*) FROM \"Document\" \
+		UNION ALL SELECT 'Vote_v2', COUNT(*) FROM \"Vote_v2\" \
+		UNION ALL SELECT 'Suggestion', COUNT(*) FROM \"Suggestion\" \
+		UNION ALL SELECT 'Stream', COUNT(*) FROM \"Stream\" \
+		ORDER BY table_name;"
+	@printf "\n  Recent Chats (last 5)\n"
+	@printf "$(SEPARATOR_LINE)\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT id, title, visibility, \"createdAt\" FROM \"Chat\" \
+		ORDER BY \"createdAt\" DESC LIMIT 5;"
+	@printf "\n  Recent Messages (last 10)\n"
+	@printf "$(SEPARATOR_LINE)\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT m.id, m.role, LEFT(m.parts::text, 80) as parts_preview, m.\"createdAt\" \
+		FROM \"Message_v2\" m ORDER BY m.\"createdAt\" DESC LIMIT 10;"
 
 # ==============================================================================
 # Quality gates
