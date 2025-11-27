@@ -8,13 +8,18 @@ import {
   sanitizeText,
 } from "@/lib/utils";
 
+// Top-level regex for UUID v4 validation (performance optimisation)
+const UUID_V4_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 describe("cn (classname merger)", () => {
   it("merges class names correctly", () => {
     expect(cn("foo", "bar")).toBe("foo bar");
   });
 
   it("handles conditional classes", () => {
-    expect(cn("foo", false && "bar", "baz")).toBe("foo baz");
+    const includeBar = false;
+    expect(cn("foo", includeBar && "bar", "baz")).toBe("foo baz");
   });
 
   it("merges tailwind classes and resolves conflicts", () => {
@@ -33,9 +38,7 @@ describe("cn (classname merger)", () => {
 describe("generateUUID", () => {
   it("generates a valid UUID v4 format", () => {
     const uuid = generateUUID();
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    expect(uuid).toMatch(uuidRegex);
+    expect(uuid).toMatch(UUID_V4_REGEX);
   });
 
   it("generates unique UUIDs", () => {

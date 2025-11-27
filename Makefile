@@ -415,8 +415,8 @@ local:
 	@$(ENV_COMPOSE) up -d --build
 	@printf "\n"
 	@printf "  Services:\n"
-	@printf "    Frontend (CopilotKit)  http://localhost:3000\n"
-	@printf "    Backend (ADK)          http://localhost:8000\n"
+	@printf "    Frontend  http://localhost:3000\n"
+	@printf "    Backend         http://localhost:8000\n"
 	@printf "\n"
 	@printf "  Commands:\n"
 	@printf "    make local-logs            Stream all logs\n"
@@ -570,7 +570,7 @@ frontend-db-query:
 backend-test: backend-test-unit backend-test-int
 
 backend-test-unit:
-	uv sync --dev
+	uv sync --all-extras
 	uv run pytest tests/unit -v
 
 backend-test-int:
@@ -580,7 +580,7 @@ backend-test-int:
 		printf "  Or run full workflow: make test-db-up && make backend-test-int && make test-db-down\n\n"; \
 		exit 1; \
 	fi
-	uv sync --dev
+	uv sync --all-extras
 	TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" uv run pytest tests/integration -v
 
 backend-test-cov:
@@ -588,12 +588,12 @@ backend-test-cov:
 		printf "\n  Test database not running. Starting...\n\n"; \
 		$(MAKE) test-db-up; \
 	fi
-	uv sync --dev
+	uv sync --all-extras
 	TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" uv run pytest tests/ -v --cov=backend/src --cov-report=html --cov-report=term
 	@printf "\n  Coverage report: htmlcov/index.html\n"
 
 backend-lint:
-	uv sync --dev --extra lint
+	uv sync --all-extras
 	uv run codespell backend/
 	uv run ruff check backend/ --diff
 	uv run ruff format backend/ --check --diff
@@ -639,18 +639,27 @@ check:
 	@printf "\n  3. Backend Testing...\n\n"
 	@$(MAKE) backend-test || ($(MAKE) test-db-down && exit 1)
 	@printf "\n  Backend tests passed\n\n"
-	@printf "  4. Stopping test database...\n\n"
-	@$(MAKE) test-db-down
-	@printf "\n  5. Frontend Type Checking...\n\n"
+	@printf "  4. Frontend Type Checking...\n\n"
 	@$(MAKE) frontend-typecheck
 	@printf "\n  Frontend type checking passed\n\n"
-	@printf "  6. Frontend Linting...\n\n"
+	@printf "  5. Frontend Linting...\n\n"
 	@$(MAKE) frontend-lint
 	@printf "\n  Frontend linting passed\n\n"
-	@printf "  7. Frontend Testing...\n\n"
-	@$(MAKE) frontend-test
+	@printf "  6. Starting backend for e2e tests...\n\n"
+	@TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" \
+		uv run uvicorn backend.src.app:app --host 0.0.0.0 --port 8000 & \
+		BACKEND_PID=$$!; \
+		sleep 5; \
+		printf "  7. Frontend Testing (e2e with backend)...\n\n"; \
+		$(MAKE) frontend-test; \
+		TEST_EXIT=$$?; \
+		printf "\n  Stopping backend...\n"; \
+		kill $$BACKEND_PID 2>/dev/null || true; \
+		if [ $$TEST_EXIT -ne 0 ]; then $(MAKE) test-db-down; exit 1; fi
 	@printf "\n  Frontend tests passed\n\n"
-	@printf "  8. Frontend Build...\n\n"
+	@printf "  8. Stopping test database...\n\n"
+	@$(MAKE) test-db-down
+	@printf "\n  9. Frontend Build...\n\n"
 	@$(MAKE) frontend-build
 	@printf "\n  Frontend build passed\n\n"
 	$(SEPARATOR)

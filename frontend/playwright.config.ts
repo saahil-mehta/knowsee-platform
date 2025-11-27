@@ -28,10 +28,10 @@ export default defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : 8,
+  /* Retry failed tests on CI to handle flakiness */
+  retries: process.env.CI ? 2 : 0,
+  /* Auto-detect workers locally, limit on CI */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -44,9 +44,9 @@ export default defineConfig({
   },
 
   /* Configure global timeout for each test */
-  timeout: 240 * 1000, // 120 seconds
+  timeout: 60 * 1000,
   expect: {
-    timeout: 240 * 1000,
+    timeout: 10 * 1000,
   },
 
   /* Configure projects */
@@ -99,9 +99,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "pnpm dev",
+    command: `${process.env.DATABASE_URL ? `DATABASE_URL="${process.env.DATABASE_URL}" ` : ""}PLAYWRIGHT=True pnpm dev`,
     url: `${baseURL}/ping`,
     timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
   },
 });

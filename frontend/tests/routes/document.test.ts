@@ -1,9 +1,8 @@
-import type { Document } from "@/lib/db/types";
 import { getMessageByErrorCode } from "@/lib/errors";
 import { generateUUID } from "@/lib/utils";
 import { expect, test } from "../fixtures";
 
-const documentsCreatedByAda: Document[] = [];
+const documentsCreatedByAda: Record<string, unknown>[] = [];
 
 test.describe
   .serial("/api/document", () => {
