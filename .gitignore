@@ -206,6 +206,26 @@ tools/a2a-inspector/
 frontend/tsconfig.tsbuildinfo
 frontend/.next/
 
+# Next.js / Frontend specific
+.pnp
+.pnp.js
+out/
+*.pem
+.pnpm-debug.log*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+.turbo
+.vercel
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.state.json
+
 # Local memory
 .scratchpad.txt
 *.backup

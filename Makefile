@@ -9,12 +9,15 @@ SHELL := /bin/bash
 
 FRONTEND_DIR := frontend
 LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml
+ENV_COMPOSE = set -a && source .env && $(LOCAL_COMPOSE)
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
 PLAYGROUND_PORT ?= 8501
 BACKEND_HOST ?= localhost
 BACKEND_PORT ?= 8000
+GCP_REGION := europe-west2
+SEPARATOR_LINE := ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 # ==============================================================================
 # ASCII Branding Macros
@@ -32,7 +35,7 @@ define KNOWSEE_LOGO
 endef
 
 define SEPARATOR
-	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	@printf "$(SEPARATOR_LINE)\n"
 endef
 
 # Usage: $(call PRINT_HEADER,Title)
@@ -43,16 +46,21 @@ define PRINT_HEADER
 	@printf "\n"
 endef
 
+# Usage: $(call PNPM,command)
+define PNPM
+	@cd $(FRONTEND_DIR) && pnpm $(1)
+endef
+
 .PHONY: \
-	help install bootstrap upgrade outdated \
+	help install upgrade outdated \
 	playground local-backend data-ingestion \
 	docker-auth docker-build-backend docker-build-frontend docker-push-backend docker-push-frontend \
 	deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
-	drift \ 
-	frontend-dev frontend-build frontend-typecheck frontend-lint frontend-test \
-	backend-test backend-lint test lint check ci \
+	drift \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql frontend-db-query \
+	backend-test backend-lint test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
@@ -74,6 +82,19 @@ help:
 	@printf "  make local             Start full local stack (backend + frontend)\n"
 	@printf "  make local-down        Stop local stack\n"
 	@printf "  make local-logs        Stream local stack logs\n"
+	@printf "\n"
+	@printf "Frontend (Next.js Chatbot):\n"
+	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
+	@printf "  make frontend-down         Stop frontend database\n"
+	@printf "  make frontend-clean        Stop database and remove all data\n"
+	@printf "  make frontend-install      Install frontend dependencies\n"
+	@printf "  make frontend-build        Build frontend for production\n"
+	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
+	@printf "  make frontend-db-query     Show database summary and recent data\n"
+	@printf "  make frontend-lint         Lint frontend code\n"
+	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
+	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
+	@printf "  make frontend-test-e2e     Run frontend e2e tests (requires server)\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -111,14 +132,13 @@ help:
 # Setup
 # ==============================================================================
 
-install:
+install: frontend-install
 	@command -v uv >/dev/null 2>&1 || { \
 		echo "uv is not installed. Installing..."; \
 		curl -LsSf https://astral.sh/uv/0.8.13/install.sh | sh; \
 		source $$HOME/.local/bin/env; \
 	}
 	@uv sync
-	@cd $(FRONTEND_DIR) && npm install
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
@@ -131,8 +151,8 @@ upgrade:
 	fi
 	@printf "  Creating backup of lock files...\n"
 	@cp uv.lock uv.lock.backup 2>/dev/null || true
-	@cp $(FRONTEND_DIR)/package-lock.json $(FRONTEND_DIR)/package-lock.json.backup 2>/dev/null || true
-	@printf "  ✅ Backups created: uv.lock.backup, package-lock.json.backup\n\n"
+	@cp $(FRONTEND_DIR)/pnpm-lock.yaml $(FRONTEND_DIR)/pnpm-lock.yaml.backup 2>/dev/null || true
+	@printf "  ✅ Backups created: uv.lock.backup, pnpm-lock.yaml.backup\n\n"
 	@printf "  Checking outdated backend packages...\n"
 	@uv pip list --outdated 2>/dev/null | head -20 || printf "  (No outdated packages detected)\n"
 	@printf "\n"
@@ -143,10 +163,10 @@ upgrade:
 	@uv sync
 	@printf "\n"
 	$(SEPARATOR)
-	@printf "  Upgrading frontend npm packages...\n\n"
-	@cd $(FRONTEND_DIR) && npm update
+	@printf "  Upgrading frontend packages...\n\n"
+	$(call PNPM,update)
 	@printf "\n  Running security audit...\n\n"
-	@cd $(FRONTEND_DIR) && npm audit --audit-level=moderate || printf "\n  ⚠️  Security issues found - review above\n"
+	@cd $(FRONTEND_DIR) && pnpm audit || printf "\n  Security issues found - review above\n"
 	@printf "\n"
 	$(SEPARATOR)
 	@printf "  Upgrade Summary:\n\n"
@@ -163,26 +183,15 @@ upgrade:
 	else \
 		printf "    No backup found\n"; \
 	fi
-	@printf "\n  Frontend npm packages:\n"
-	@if [ -f $(FRONTEND_DIR)/package-lock.json.backup ]; then \
-		cd $(FRONTEND_DIR) && python3 -c 'import json, sys; \
-		old = json.load(open("package-lock.json.backup")); \
-		new = json.load(open("package-lock.json")); \
-		old_pkgs = {k: v.get("version", "") for k, v in old.get("packages", {}).items() if v.get("version")}; \
-		new_pkgs = {k: v.get("version", "") for k, v in new.get("packages", {}).items() if v.get("version")}; \
-		changes = [(k.split("node_modules/")[-1] if "node_modules/" in k else k, old_pkgs.get(k, "new"), v) for k, v in new_pkgs.items() if old_pkgs.get(k) != v and k]; \
-		for pkg, old_v, new_v in sorted(changes)[:15]: \
-			if pkg: print(f"    {pkg}: {old_v} → {new_v}")' 2>/dev/null || printf "    No version changes detected\n"; \
-	else \
-		printf "    No backup found\n"; \
-	fi
+	@printf "\n  Frontend packages:\n"
+	@printf "    Run 'git diff $(FRONTEND_DIR)/pnpm-lock.yaml' to see changes\n"
 	@printf "\n"
 	$(SEPARATOR)
 	@printf "  ✅ All dependencies upgraded successfully!\n"
 	@printf "\n  Next steps:\n"
-	@printf "    • Review changes: git diff uv.lock $(FRONTEND_DIR)/package-lock.json\n"
+	@printf "    • Review changes: git diff uv.lock $(FRONTEND_DIR)/pnpm-lock.yaml\n"
 	@printf "    • Run tests: make check\n"
-	@printf "    • Rollback if needed: mv uv.lock.backup uv.lock && mv $(FRONTEND_DIR)/package-lock.json.backup $(FRONTEND_DIR)/package-lock.json\n"
+	@printf "    • Rollback if needed: mv uv.lock.backup uv.lock && mv $(FRONTEND_DIR)/pnpm-lock.yaml.backup $(FRONTEND_DIR)/pnpm-lock.yaml\n"
 	$(SEPARATOR)
 	@printf "\n"
 
@@ -192,16 +201,13 @@ outdated:
 	@uv pip list --outdated 2>/dev/null || printf "  ✅ All packages are up to date\n"
 	@printf "\n"
 	$(SEPARATOR)
-	@printf "  Frontend (npm):\n\n"
-	@cd $(FRONTEND_DIR) && npm outdated || printf "  ✅ All packages are up to date\n"
+	@printf "  Frontend (pnpm):\n\n"
+	@cd $(FRONTEND_DIR) && pnpm outdated || printf "  ✅ All packages are up to date\n"
 	@printf "\n"
 	$(SEPARATOR)
 	@printf "  To upgrade: make upgrade\n"
 	$(SEPARATOR)
 	@printf "\n"
-
-bootstrap:
-	@cd $(FRONTEND_DIR) && npm run bootstrap
 
 # ==============================================================================
 # GCP Profile Management
@@ -278,7 +284,7 @@ playground:
 	uv run adk web . --port $(PLAYGROUND_PORT) --reload_agents
 
 local-backend:
-	uv run uvicorn app.fast_api_app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
+	uv run uvicorn backend.src.app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
 
 # ==============================================================================
 # Docker Build and Deploy
@@ -300,11 +306,11 @@ define CHECK_ENV
 endef
 
 # Get registry URL from terraform output or construct it
-REGISTRY_URL = $(shell if [ -n "$(ENV)" ]; then cd terraform/environments/$(ENV) && terraform output -raw artifact_registry_url 2>/dev/null || echo "europe-west2-docker.pkg.dev/$$(gcloud config get-value project)/$(RESOURCE_PREFIX)-$(ENV)-app"; fi)
+REGISTRY_URL = $(shell if [ -n "$(ENV)" ]; then cd terraform/environments/$(ENV) && terraform output -raw artifact_registry_url 2>/dev/null || echo "$(GCP_REGION)-docker.pkg.dev/$$(gcloud config get-value project)/$(RESOURCE_PREFIX)-$(ENV)-app"; fi)
 SERVICE_PREFIX = $(RESOURCE_PREFIX)-$(ENV)
 
 docker-auth:
-	@gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+	@gcloud auth configure-docker $(GCP_REGION)-docker.pkg.dev --quiet
 
 docker-build-backend:
 	$(call CHECK_ENV,docker-build-backend)
@@ -336,7 +342,7 @@ deploy-backend:
 	gcloud run deploy $(SERVICE_PREFIX)-backend \
 		--image $(REGISTRY_URL)/backend:latest \
 		--project $$PROJECT_ID \
-		--region europe-west2 \
+		--region $(GCP_REGION) \
 		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
 		--no-allow-unauthenticated \
 		--memory 8Gi \
@@ -345,13 +351,12 @@ deploy-backend:
 		--max-instances 10 \
 		--set-env-vars "DATA_STORE_ID=$(SERVICE_PREFIX)-datastore,DATA_STORE_REGION=eu" && \
 	printf "\n" && \
-	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
-	printf "  ✅ Backend deployed successfully!\n\n" && \
-	printf "  You can access the backend from GCP Cloud Shell:\n" && \
-	printf "  1. Run this command:\n" && \
-	printf "     gcloud run services proxy $(SERVICE_PREFIX)-backend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
-	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
-	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "$(SEPARATOR_LINE)\n" && \
+	printf "  Backend deployed successfully!\n\n" && \
+	printf "  Access from GCP Cloud Shell:\n" && \
+	printf "  1. Run: gcloud run services proxy $(SERVICE_PREFIX)-backend --port=8080 --region=$(GCP_REGION) --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview > Preview on port 8080\n" && \
+	printf "$(SEPARATOR_LINE)\n" && \
 	printf "\n"
 
 deploy-frontend:
@@ -359,12 +364,12 @@ deploy-frontend:
 	$(call PRINT_HEADER,Deploying Frontend to Cloud Run ($(ENV)))
 	@PROJECT_ID=$$(gcloud config get-value project) && \
 	BACKEND_URL=$$(gcloud run services describe $(SERVICE_PREFIX)-backend \
-		--region europe-west2 \
+		--region $(GCP_REGION) \
 		--format 'value(status.url)') && \
 	gcloud run deploy $(SERVICE_PREFIX)-frontend \
 		--image $(REGISTRY_URL)/frontend:latest \
 		--project $$PROJECT_ID \
-		--region europe-west2 \
+		--region $(GCP_REGION) \
 		--service-account $(SERVICE_PREFIX)-app@$$PROJECT_ID.iam.gserviceaccount.com \
 		--no-allow-unauthenticated \
 		--memory 512Mi \
@@ -373,13 +378,12 @@ deploy-frontend:
 		--max-instances 10 \
 		--set-env-vars "NODE_ENV=production,NEXT_PUBLIC_COPILOT_AGENT=sagent_copilot,AGENT_RUNTIME_URL=$$BACKEND_URL/api/agui" && \
 	printf "\n" && \
-	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
-	printf "  ✅ Frontend deployed successfully!\n\n" && \
-	printf "  You can access the frontend (and backend connected to it) from GCP Cloud Shell:\n" && \
-	printf "  1. Run this command:\n" && \
-	printf "     gcloud run services proxy $(SERVICE_PREFIX)-frontend --port=8080 --region=europe-west2 --project=$$PROJECT_ID\n\n" && \
-	printf "  2. Click Web Preview (eye icon) and select 'Preview on port 8080'\n" && \
-	printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" && \
+	printf "$(SEPARATOR_LINE)\n" && \
+	printf "  Frontend deployed successfully!\n\n" && \
+	printf "  Access from GCP Cloud Shell:\n" && \
+	printf "  1. Run: gcloud run services proxy $(SERVICE_PREFIX)-frontend --port=8080 --region=$(GCP_REGION) --project=$$PROJECT_ID\n\n" && \
+	printf "  2. Click Web Preview > Preview on port 8080\n" && \
+	printf "$(SEPARATOR_LINE)\n" && \
 	printf "\n"
 
 # Full build and deploy workflows
@@ -408,7 +412,7 @@ data-ingestion:
 
 local:
 	$(call PRINT_HEADER,Local Stack (Backend + Frontend))
-	@set -a && source .env && $(LOCAL_COMPOSE) up -d --build
+	@$(ENV_COMPOSE) up -d --build
 	@printf "\n"
 	@printf "  Services:\n"
 	@printf "    Frontend (CopilotKit)  http://localhost:3000\n"
@@ -430,7 +434,7 @@ local:
 	@printf "\n"
 
 local-down:
-	@set -a && source .env && $(LOCAL_COMPOSE) down
+	@$(ENV_COMPOSE) down
 
 local-logs:
 	@$(LOCAL_COMPOSE) logs -f
@@ -445,7 +449,7 @@ local-status:
 	@$(LOCAL_COMPOSE) ps
 
 local-restart:
-	@set -a && source .env && $(LOCAL_COMPOSE) restart
+	@$(ENV_COMPOSE) restart
 
 # ==============================================================================
 # Drift Check
@@ -462,20 +466,102 @@ drift:
 # Frontend workflows (Next.js)
 # ==============================================================================
 
-frontend-dev:
-	@cd $(FRONTEND_DIR) && npm run dev
+frontend:
+	$(call PRINT_HEADER,Frontend Development)
+	@printf "  Setting up PostgreSQL database...\n\n"
+	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Setting up test user...\n\n"
+	@USER_COUNT=$$(docker exec knowsee-frontend-db psql -U postgres -d chatbot -tAc 'SELECT COUNT(*) FROM "User"' 2>/dev/null || echo "0"); \
+	if [ "$$USER_COUNT" -eq 0 ]; then \
+		read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
+		USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+		read -sp "  Enter password (default: password): " USER_PASSWORD; \
+		USER_PASSWORD=$${USER_PASSWORD:-password}; \
+		printf "\n"; \
+		cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+		printf "\n  Test user created:\n"; \
+		printf "    Email:    $$USER_EMAIL\n"; \
+		printf "    Password: $$USER_PASSWORD\n"; \
+	else \
+		printf "  Users already exist, skipping user creation\n"; \
+	fi
+	@printf "\n"
+	$(SEPARATOR)
+	@printf "  Starting frontend development server...\n\n"
+	@printf "  Frontend:  http://localhost:3000\n"
+	@printf "  Database:  postgresql://postgres:postgres@localhost:5432/chatbot\n"
+	@printf "\n"
+	@printf "  Commands:\n"
+	@printf "    make frontend-down         Stop database\n"
+	@printf "    make frontend-db-psql      Open PostgreSQL CLI\n"
+	@printf "\n"
+	$(SEPARATOR)
+	$(call PNPM,dev)
+
+frontend-down:
+	@printf "Stopping frontend database...\n"
+	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down
+	@printf "Database stopped\n"
+
+frontend-clean:
+	@printf "Stopping frontend database and removing all data...\n"
+	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down -v
+	@printf "Database and data removed\n"
+
+frontend-install:
+	@cd $(FRONTEND_DIR) && pnpm install
+	@cd $(FRONTEND_DIR) && pnpm exec playwright install --with-deps chromium
 
 frontend-build:
-	@cd $(FRONTEND_DIR) && npm run build
+	$(call PNPM,build)
 
 frontend-typecheck:
-	@cd $(FRONTEND_DIR) && npm run typecheck
+	$(call PNPM,tsc --noEmit)
 
 frontend-lint:
-	@cd $(FRONTEND_DIR) && npm run lint
+	$(call PNPM,lint)
 
 frontend-test:
-	@cd $(FRONTEND_DIR) && npm run test
+	$(call PNPM,test)
+
+frontend-test-unit:
+	$(call PNPM,test:unit)
+
+frontend-test-e2e:
+	$(call PNPM,test:e2e)
+
+frontend-db-psql:
+	@docker exec -it knowsee-frontend-db psql -U postgres -d chatbot
+
+frontend-db-query:
+	@if ! docker ps --format '{{.Names}}' | grep -q '^knowsee-frontend-db$$'; then \
+		printf "\n  Database not running.\n\n"; \
+		printf "  Start it with: make frontend\n\n"; \
+		exit 1; \
+	fi
+	@printf "\n  Database Summary\n"
+	@printf "$(SEPARATOR_LINE)\n\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT 'User' as table_name, COUNT(*) as rows FROM \"User\" \
+		UNION ALL SELECT 'Chat', COUNT(*) FROM \"Chat\" \
+		UNION ALL SELECT 'Message_v2', COUNT(*) FROM \"Message_v2\" \
+		UNION ALL SELECT 'Document', COUNT(*) FROM \"Document\" \
+		UNION ALL SELECT 'Vote_v2', COUNT(*) FROM \"Vote_v2\" \
+		UNION ALL SELECT 'Suggestion', COUNT(*) FROM \"Suggestion\" \
+		UNION ALL SELECT 'Stream', COUNT(*) FROM \"Stream\" \
+		ORDER BY table_name;"
+	@printf "\n  Recent Chats (last 5)\n"
+	@printf "$(SEPARATOR_LINE)\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT id, title, visibility, \"createdAt\" FROM \"Chat\" \
+		ORDER BY \"createdAt\" DESC LIMIT 5;"
+	@printf "\n  Recent Messages (last 10)\n"
+	@printf "$(SEPARATOR_LINE)\n"
+	@docker exec knowsee-frontend-db psql -U postgres -d chatbot -c "\
+		SELECT m.id, m.role, LEFT(m.parts::text, 80) as parts_preview, m.\"createdAt\" \
+		FROM \"Message_v2\" m ORDER BY m.\"createdAt\" DESC LIMIT 10;"
 
 # ==============================================================================
 # Quality gates
@@ -498,30 +584,28 @@ test: backend-test frontend-test
 lint: backend-lint frontend-lint
 
 # Full CI pipeline - runs all checks in proper order
-check: ci
-
-ci:
+check:
 	$(call PRINT_HEADER,Full Test Suite Running)
-	@printf "  1️⃣  Backend Linting...\n\n"
+	@printf "  1. Backend Linting...\n\n"
 	@$(MAKE) backend-lint
-	@printf "\n  ✅ Backend linting passed\n\n"
-	@printf "  2️⃣  Backend Testing...\n\n"
+	@printf "\n  Backend linting passed\n\n"
+	@printf "  2. Backend Testing...\n\n"
 	@$(MAKE) backend-test
-	@printf "\n  ✅ Backend tests passed\n\n"
-	@printf "  3️⃣  Frontend Type Checking...\n\n"
+	@printf "\n  Backend tests passed\n\n"
+	@printf "  3. Frontend Type Checking...\n\n"
 	@$(MAKE) frontend-typecheck
-	@printf "\n  ✅ Frontend type checking passed\n\n"
-	@printf "  4️⃣  Frontend Linting...\n\n"
+	@printf "\n  Frontend type checking passed\n\n"
+	@printf "  4. Frontend Linting...\n\n"
 	@$(MAKE) frontend-lint
-	@printf "\n  ✅ Frontend linting passed\n\n"
-	@printf "  5️⃣  Frontend Testing...\n\n"
+	@printf "\n  Frontend linting passed\n\n"
+	@printf "  5. Frontend Testing...\n\n"
 	@$(MAKE) frontend-test
-	@printf "\n  ✅ Frontend tests passed\n\n"
-	@printf "  6️⃣  Frontend Build...\n\n"
+	@printf "\n  Frontend tests passed\n\n"
+	@printf "  6. Frontend Build...\n\n"
 	@$(MAKE) frontend-build
-	@printf "\n  ✅ Frontend build passed\n\n"
+	@printf "\n  Frontend build passed\n\n"
 	$(SEPARATOR)
-	@printf "  ✨ All checks passed successfully!\n"
+	@printf "  All checks passed successfully!\n"
 	$(SEPARATOR)
 	@printf "\n"
 
