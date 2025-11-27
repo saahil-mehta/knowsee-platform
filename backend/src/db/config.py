@@ -57,7 +57,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             raise
 
 
-async def check_db_health(timeout: float | None = None) -> dict[str, str | bool]:
+async def check_db_health(timeout: float | None = None) -> dict[str, str | bool | float]:
     """Check database connectivity with a timeout.
 
     Args:

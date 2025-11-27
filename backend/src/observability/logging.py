@@ -6,7 +6,7 @@ Provides JSON-formatted logs with context binding for request tracing.
 import logging
 import os
 import sys
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -102,7 +102,7 @@ def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
         log.info("Request started")
         log.info("Request completed")  # Also includes request_id
     """
-    return structlog.get_logger(name or "knowsee")
+    return cast(structlog.stdlib.BoundLogger, structlog.get_logger(name or "knowsee"))
 
 
 def bind_context(**context: Any) -> None:

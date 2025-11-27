@@ -167,7 +167,10 @@ async def chat_simple(request: SimpleChatRequest) -> SimpleChatResponse:
         if not ai_messages:
             raise HTTPException(status_code=500, detail="No response generated")
 
-        return SimpleChatResponse(response=ai_messages[-1].content)
+        # Handle content which can be str or list
+        content = ai_messages[-1].content
+        response_text = content if isinstance(content, str) else str(content)
+        return SimpleChatResponse(response=response_text)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}") from e

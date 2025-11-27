@@ -11,6 +11,7 @@ from langchain_core.messages import BaseMessage
 from langchain_google_vertexai import ChatVertexAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.graph.state import CompiledStateGraph
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -41,7 +42,7 @@ class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def create_chatbot_graph() -> StateGraph:
+def create_chatbot_graph() -> CompiledStateGraph:
     """Create and compile the chatbot graph.
 
     Returns:
@@ -63,7 +64,7 @@ def create_chatbot_graph() -> StateGraph:
         before_sleep=lambda retry_state: logger.warning(
             "LLM call failed, retrying",
             attempt=retry_state.attempt_number,
-            wait_seconds=retry_state.next_action.sleep,
+            wait_seconds=getattr(retry_state.next_action, "sleep", 0),
         ),
         reraise=True,
     )
