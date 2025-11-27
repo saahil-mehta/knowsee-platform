@@ -62,6 +62,7 @@ function PureMessages({
   return (
     <div
       className="overscroll-behavior-contain -webkit-overflow-scrolling-touch flex-1 touch-pan-y overflow-y-scroll"
+      data-testid="messages-container"
       ref={messagesContainerRef}
       style={{ overflowAnchor: "none" }}
     >
@@ -106,6 +107,7 @@ function PureMessages({
         <button
           aria-label="Scroll to bottom"
           className="-translate-x-1/2 absolute bottom-40 left-1/2 z-10 rounded-full border bg-background p-2 shadow-lg transition-colors hover:bg-muted"
+          data-testid="scroll-to-bottom-button"
           onClick={() => scrollToBottom("smooth")}
           type="button"
         >
