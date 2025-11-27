@@ -1,22 +1,27 @@
 """FastAPI application exposing the LangGraph chatbot."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
 from backend.src.api import router as db_router
+from backend.src.db.config import check_db_health
 from backend.src.graph import chatbot_graph
+from backend.src.observability.middleware import setup_observability
 from backend.src.stream import create_streaming_response
 
 app = FastAPI(
     title="Knowsee Chatbot API",
-    description="Simple LangGraph chatbot powered by Gemini 2.5 Flash",
+    description="Simple LangGraph chatbot powered by Vertex AI",
     version="0.1.0",
 )
+
+# Set up observability (logging, metrics, exception handlers)
+setup_observability(app)
 
 # CORS for frontend integration
 app.add_middleware(
@@ -79,9 +84,51 @@ class SimpleChatResponse(BaseModel):
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint."""
+async def health_liveness() -> dict[str, str]:
+    """Liveness probe - checks if the application is running.
+
+    This is a fast check with no external dependencies.
+    Use for Kubernetes liveness probes.
+    """
     return {"status": "healthy"}
+
+
+@app.get("/health/live")
+async def health_live() -> dict[str, str]:
+    """Alias for liveness probe (Kubernetes convention)."""
+    return {"status": "healthy"}
+
+
+@app.get("/health/ready")
+async def health_readiness() -> JSONResponse:
+    """Readiness probe - checks if the application can serve traffic.
+
+    Verifies:
+    - Database connectivity with timeout
+
+    Returns 200 if ready, 503 if not ready.
+    """
+    checks: dict[str, Any] = {}
+
+    # Check database
+    db_health = await check_db_health()
+    checks["database"] = db_health
+
+    # Determine overall status
+    all_healthy = all(
+        check.get("healthy", False) for check in checks.values() if isinstance(check, dict)
+    )
+
+    status_code = 200 if all_healthy else 503
+    status = "ready" if all_healthy else "not_ready"
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": status,
+            "checks": checks,
+        },
+    )
 
 
 @app.post("/api/chat")

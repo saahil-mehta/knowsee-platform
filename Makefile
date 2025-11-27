@@ -60,7 +60,7 @@ endef
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
 	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql frontend-db-query \
-	backend-test backend-lint test lint check \
+	backend-test backend-test-unit backend-test-int backend-test-cov backend-lint backend-health test-db-up test-db-down test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
@@ -567,17 +567,41 @@ frontend-db-query:
 # Quality gates
 # ==============================================================================
 
-backend-test:
+backend-test: backend-test-unit backend-test-int
+
+backend-test-unit:
 	uv sync --dev
-	uv run pytest tests/unit
-	uv run pytest tests/integration
+	uv run pytest tests/unit -v
+
+backend-test-int:
+	uv sync --dev
+	uv run pytest tests/integration -v
+
+backend-test-cov:
+	uv sync --dev
+	uv run pytest tests/ -v --cov=backend/src --cov-report=html --cov-report=term
+	@printf "\n  Coverage report: htmlcov/index.html\n"
 
 backend-lint:
 	uv sync --dev --extra lint
-	uv run codespell
-	uv run ruff check . --diff
-	uv run ruff format . --check --diff
-	uv run mypy .
+	uv run codespell backend/
+	uv run ruff check backend/ --diff
+	uv run ruff format backend/ --check --diff
+	uv run mypy backend/src
+
+# Test database management
+test-db-up:
+	docker compose -f docker-compose.test.yml up -d
+	@printf "Waiting for test database...\n"
+	@sleep 3
+	@docker compose -f docker-compose.test.yml ps
+
+test-db-down:
+	docker compose -f docker-compose.test.yml down -v
+
+# Health check
+backend-health:
+	@curl -s http://localhost:$(BACKEND_PORT)/health/ready | python3 -m json.tool || echo "Backend not running"
 
 test: backend-test frontend-test
 

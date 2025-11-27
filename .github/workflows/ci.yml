@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    uses: ./.github/workflows/backend-lint.yml
+
+  backend-test:
+    uses: ./.github/workflows/backend-test.yml
+
+  frontend-lint:
+    uses: ./.github/workflows/lint.yml
+
+  frontend-test:
+    uses: ./.github/workflows/playwright.yml
+    secrets: inherit
+
+  all-checks:
+    needs: [backend-lint, backend-test, frontend-lint, frontend-test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.backend-test.result }}" != "success" ] || \
+             [ "${{ needs.frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.frontend-test.result }}" != "success" ]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed"

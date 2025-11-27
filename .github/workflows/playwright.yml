@@ -1,14 +1,16 @@
 name: Frontend E2E Tests
+
 on:
+  workflow_call:
   push:
     branches: [main, master]
     paths:
-      - 'frontend/**'
-      - '.github/workflows/playwright.yml'
+      - "frontend/**"
+      - ".github/workflows/playwright.yml"
   pull_request:
     branches: [main, master]
     paths:
-      - 'frontend/**'
+      - "frontend/**"
 
 jobs:
   test:
