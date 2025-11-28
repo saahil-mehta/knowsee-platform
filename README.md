@@ -1,8 +1,11 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/knowsee-asset-dark/dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/knowsee-asset-light/light.svg">
-  <img alt="Knowsee Platform" src="assets/knowsee-asset-light/light.svg" width="280">
-</picture>
+<p>
+  <img src="assets/logos/links-line.png" alt="Knowsee Icon" width="48" align="left" style="margin-right: 12px;">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/knowsee-asset-dark/dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/knowsee-asset-light/light.svg">
+    <img alt="Knowsee Platform" src="assets/knowsee-asset-light/light.svg" width="200">
+  </picture>
+</p>
 
 # Knowsee Platform
 
