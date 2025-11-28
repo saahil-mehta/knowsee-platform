@@ -15,7 +15,9 @@ def get_project_id() -> str:
     return str(project_id) if project_id else ""
 
 
-def scan_agent_engines(project_id: str, regions: list[str], environment: str | None = None) -> list[dict]:
+def scan_agent_engines(
+    project_id: str, regions: list[str], environment: str | None = None
+) -> list[dict]:
     """Scan for Agent Engines across regions."""
     resources = []
     for region in regions:
@@ -32,19 +34,26 @@ def scan_agent_engines(project_id: str, regions: list[str], environment: str | N
                 # Filter by environment if specified
                 if environment:
                     # Check if resource name contains environment identifier
-                    env_patterns = [f"-{environment}-", f"_{environment}_", f"{environment}-", f"-{environment}"]
+                    env_patterns = [
+                        f"-{environment}-",
+                        f"_{environment}_",
+                        f"{environment}-",
+                        f"-{environment}",
+                    ]
                     if not any(pattern in engine_name.lower() for pattern in env_patterns):
                         continue
 
                 age_days = (datetime.now(timezone.utc) - engine.create_time).days
-                resources.append({
-                    "type": "Agent Engine",
-                    "name": engine_name,
-                    "region": region,
-                    "id": engine.name.split("/")[-1],
-                    "created": engine.create_time.strftime("%Y-%m-%d"),
-                    "age_days": age_days,
-                })
+                resources.append(
+                    {
+                        "type": "Agent Engine",
+                        "name": engine_name,
+                        "region": region,
+                        "id": engine.name.split("/")[-1],
+                        "created": engine.create_time.strftime("%Y-%m-%d"),
+                        "age_days": age_days,
+                    }
+                )
         except Exception as e:
             print(f"Warning: Failed to scan region {region}: {e}", file=sys.stderr)
     return resources
@@ -54,9 +63,10 @@ def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Detect GCP resources not managed by Terraform")
     parser.add_argument(
-        "--environment", "-e",
+        "--environment",
+        "-e",
         choices=["cicd", "dev", "staging", "prod"],
-        help="Filter resources by environment (cicd, dev, staging, prod)"
+        help="Filter resources by environment (cicd, dev, staging, prod)",
     )
     args = parser.parse_args()
 
@@ -88,10 +98,12 @@ def main() -> None:
     print(f"Found {len(agent_engines)} resource(s) not in Terraform{env_msg}:\n")
 
     for resource in sorted(agent_engines, key=lambda r: r["created"]):
-        print(f"{resource['type']:20} | "
-              f"{resource['name']:20} | "
-              f"{resource['region']:15} | "
-              f"{resource['created']} ({resource['age_days']}d ago)")
+        print(
+            f"{resource['type']:20} | "
+            f"{resource['name']:20} | "
+            f"{resource['region']:15} | "
+            f"{resource['created']} ({resource['age_days']}d ago)"
+        )
 
     print("\n" + "=" * 80)
     print(f"Total drift: {len(agent_engines)} resource(s)")

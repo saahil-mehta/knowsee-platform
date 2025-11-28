@@ -3,13 +3,11 @@
 These tests verify database round-trips using the real test database.
 """
 
-from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
 
 from backend.src.db import queries
-from backend.src.db.models import Chat, Message, User
 
 pytestmark = pytest.mark.asyncio
 
@@ -203,7 +201,11 @@ class TestMessageDatabaseOperations:
             test_session,
             [
                 {"chatId": chat_id, "role": "user", "parts": [{"type": "text", "text": "One"}]},
-                {"chatId": chat_id, "role": "assistant", "parts": [{"type": "text", "text": "Two"}]},
+                {
+                    "chatId": chat_id,
+                    "role": "assistant",
+                    "parts": [{"type": "text", "text": "Two"}],
+                },
             ],
         )
         await test_session.commit()

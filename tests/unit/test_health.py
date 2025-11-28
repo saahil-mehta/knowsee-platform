@@ -23,9 +23,7 @@ class TestCheckDbHealth:
         def mock_factory():
             return mock_session_ctx()
 
-        with patch(
-            "backend.src.db.config.get_session_factory", return_value=mock_factory
-        ):
+        with patch("backend.src.db.config.get_session_factory", return_value=mock_factory):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=2.0)
@@ -47,9 +45,7 @@ class TestCheckDbHealth:
         def mock_factory():
             return mock_session_ctx()
 
-        with patch(
-            "backend.src.db.config.get_session_factory", return_value=mock_factory
-        ):
+        with patch("backend.src.db.config.get_session_factory", return_value=mock_factory):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=2.0)
@@ -77,9 +73,7 @@ class TestCheckDbHealth:
         def mock_factory():
             return mock_session_ctx()
 
-        with patch(
-            "backend.src.db.config.get_session_factory", return_value=mock_factory
-        ):
+        with patch("backend.src.db.config.get_session_factory", return_value=mock_factory):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=0.1)
