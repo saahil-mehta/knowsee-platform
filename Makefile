@@ -58,7 +58,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-db-psql frontend-db-query \
+	frontend frontend-down frontend-clean create-user frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-db-psql frontend-db-query \
 	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -85,6 +85,7 @@ help:
 	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
 	@printf "  make frontend-down         Stop frontend database\n"
 	@printf "  make frontend-clean        Stop database and remove all data\n"
+	@printf "  make create-user           Create a new user (requires backend running)\n"
 	@printf "  make frontend-install      Install frontend dependencies\n"
 	@printf "  make frontend-build        Build frontend for production\n"
 	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
@@ -472,18 +473,29 @@ frontend:
 	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh
 	@printf "\n"
 	$(SEPARATOR)
+	@printf "  Running database migrations...\n\n"
+	@POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/chatbot \
+		uv run alembic -c backend/alembic.ini upgrade head
+	@printf "\n"
+	$(SEPARATOR)
 	@printf "  Setting up test user...\n\n"
 	@USER_COUNT=$$(docker exec knowsee-frontend-db psql -U postgres -d chatbot -tAc 'SELECT COUNT(*) FROM "User"' 2>/dev/null || echo "0"); \
 	if [ "$$USER_COUNT" -eq 0 ]; then \
-		read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
-		USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
-		read -sp "  Enter password (default: password): " USER_PASSWORD; \
-		USER_PASSWORD=$${USER_PASSWORD:-password}; \
-		printf "\n"; \
-		cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
-		printf "\n  Test user created:\n"; \
-		printf "    Email:    $$USER_EMAIL\n"; \
-		printf "    Password: $$USER_PASSWORD\n"; \
+		if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then \
+			printf "  Backend not running. To create a user later:\n"; \
+			printf "    1. Run 'make local-backend' in another terminal\n"; \
+			printf "    2. Run 'make create-user'\n\n"; \
+		else \
+			read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
+			USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+			read -sp "  Enter password (default: password): " USER_PASSWORD; \
+			USER_PASSWORD=$${USER_PASSWORD:-password}; \
+			printf "\n"; \
+			cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+			printf "\n  Test user created:\n"; \
+			printf "    Email:    $$USER_EMAIL\n"; \
+			printf "    Password: $$USER_PASSWORD\n"; \
+		fi; \
 	else \
 		printf "  Users already exist, skipping user creation\n"; \
 	fi
@@ -509,6 +521,19 @@ frontend-clean:
 	@printf "Stopping frontend database and removing all data...\n"
 	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down -v
 	@printf "Database and data removed\n"
+
+create-user:
+	@if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then \
+		printf "Error: Backend not running. Start it with 'make local-backend'\n"; \
+		exit 1; \
+	fi
+	@read -p "Enter email (default: test@example.com): " USER_EMAIL; \
+	USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+	read -sp "Enter password (default: password): " USER_PASSWORD; \
+	USER_PASSWORD=$${USER_PASSWORD:-password}; \
+	printf "\n"; \
+	cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+	printf "User created: $$USER_EMAIL\n"
 
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
@@ -673,10 +698,23 @@ validate:
 	done
 
 clean:
+	$(call PRINT_HEADER,Clean All)
+	@printf "  Cleaning Python virtual environment...\n"
+	@rm -rf .venv 2>/dev/null || true
+	@printf "  Cleaning frontend node_modules...\n"
+	@rm -rf $(FRONTEND_DIR)/node_modules 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.next 2>/dev/null || true
+	@printf "  Cleaning Python cache...\n"
+	@find . -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".mypy_cache" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@printf "  Cleaning Terraform cache...\n"
 	@find $(TERRAFORM_ROOT) -type d -name ".terraform" -prune -exec rm -rf {} + 2>/dev/null || true
 	@find $(TERRAFORM_ROOT) -type f -name ".terraform.lock.hcl" -delete 2>/dev/null || true
+	@printf "  Cleaning backup files...\n"
 	@rm -f uv.lock.backup $(FRONTEND_DIR)/package-lock.json.backup 2>/dev/null || true
-	@printf "Cleaned Terraform cache and backup files\n"
+	@printf "\n  Clean complete. Run 'make install' to reinstall dependencies.\n"
 
 define TERRAFORM_TARGETS
 $(1)-init:
