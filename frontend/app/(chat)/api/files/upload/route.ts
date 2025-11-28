@@ -4,7 +4,7 @@ import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 
 // Use Blob instead of File since File is not available in Node.js environment
-const FileSchema = z.object({
+const _FileSchema = z.object({
   file: z
     .instanceof(Blob)
     .refine((file) => file.size <= 5 * 1024 * 1024, {

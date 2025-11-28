@@ -33,7 +33,9 @@ async function createUser() {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Failed to create user: ${response.status} ${response.statusText} - ${text}`);
+    throw new Error(
+      `Failed to create user: ${response.status} ${response.statusText} - ${text}`
+    );
   }
 
   const user = await response.json();

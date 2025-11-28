@@ -1,5 +1,5 @@
-import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -9,12 +9,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["**/*.unit.test.{ts,tsx}", "tests/unit/**/*.test.{ts,tsx}"],
-    exclude: [
-      "node_modules",
-      "tests/e2e/**",
-      "tests/routes/**",
-      ".next/**",
-    ],
+    exclude: ["node_modules", "tests/e2e/**", "tests/routes/**", ".next/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

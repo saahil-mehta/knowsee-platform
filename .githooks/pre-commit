@@ -1,0 +1,17 @@
+#!/bin/sh
+# Pre-commit hook: format staged files before commit
+
+echo "Running pre-commit formatting..."
+
+# Format backend
+uv run ruff format . --quiet
+uv run ruff check --fix . --quiet 2>/dev/null || true
+
+# Format frontend
+cd frontend && pnpm exec ultracite fix --quiet 2>/dev/null || true
+cd ..
+
+# Stage any formatting changes
+git add -u
+
+echo "Pre-commit complete."

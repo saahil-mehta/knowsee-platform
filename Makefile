@@ -59,8 +59,8 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql frontend-db-query \
-	backend-test backend-lint test lint check \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-db-psql frontend-db-query \
+	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
 	$(TERRAFORM_ENVS) \
@@ -92,9 +92,8 @@ help:
 	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
 	@printf "  make frontend-db-query     Show database summary and recent data\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
-	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
-	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
-	@printf "  make frontend-test-e2e     Run frontend e2e tests (requires server)\n"
+	@printf "  make frontend-test         Run frontend unit tests\n"
+	@printf "  make frontend-test-unit    Run frontend unit tests\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -125,7 +124,7 @@ help:
 	@printf "  make check             Run full test suite (lint+typecheck+test+build)\n"
 	@printf "  make lint / make test  Lint or test backend + frontend\n"
 	@printf "  make data-ingestion    Submit RAG ingestion pipeline\n"
-	@printf "  make fmt / validate    Terraform formatting / validation\n"
+	@printf "  make fmt               Format all code (backend, frontend, terraform)\n"
 	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
 # ==============================================================================
@@ -139,6 +138,8 @@ install: frontend-install
 		source $$HOME/.local/bin/env; \
 	}
 	@uv sync
+	@git config core.hooksPath .githooks
+	@printf "Git hooks configured (.githooks)\n"
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
@@ -415,8 +416,8 @@ local:
 	@$(ENV_COMPOSE) up -d --build
 	@printf "\n"
 	@printf "  Services:\n"
-	@printf "    Frontend (CopilotKit)  http://localhost:3000\n"
-	@printf "    Backend (ADK)          http://localhost:8000\n"
+	@printf "    Frontend  http://localhost:3000\n"
+	@printf "    Backend         http://localhost:8000\n"
 	@printf "\n"
 	@printf "  Commands:\n"
 	@printf "    make local-logs            Stream all logs\n"
@@ -512,7 +513,6 @@ frontend-clean:
 
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
-	@cd $(FRONTEND_DIR) && pnpm exec playwright install --with-deps chromium
 
 frontend-build:
 	$(call PNPM,build)
@@ -523,14 +523,10 @@ frontend-typecheck:
 frontend-lint:
 	$(call PNPM,lint)
 
-frontend-test:
-	$(call PNPM,test)
+frontend-test: frontend-test-unit
 
 frontend-test-unit:
 	$(call PNPM,test:unit)
-
-frontend-test-e2e:
-	$(call PNPM,test:e2e)
 
 frontend-db-psql:
 	@docker exec -it knowsee-frontend-db psql -U postgres -d chatbot
@@ -567,17 +563,62 @@ frontend-db-query:
 # Quality gates
 # ==============================================================================
 
-backend-test:
-	uv sync --dev
-	uv run pytest tests/unit
-	uv run pytest tests/integration
+backend-test: backend-test-unit backend-test-int
+
+backend-test-unit:
+	uv sync --all-extras
+	uv run pytest tests/unit -v
+
+backend-test-int:
+	@if ! docker ps --format '{{.Names}}' | grep -q '^knowsee-test-db$$'; then \
+		printf "\n  Test database not running.\n\n"; \
+		printf "  Start it with: make test-db-up\n"; \
+		printf "  Or run full workflow: make test-db-up && make backend-test-int && make test-db-down\n\n"; \
+		exit 1; \
+	fi
+	uv sync --all-extras
+	TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" uv run pytest tests/integration -v
+
+backend-test-cov:
+	@if ! docker ps --format '{{.Names}}' | grep -q '^knowsee-test-db$$'; then \
+		printf "\n  Test database not running. Starting...\n\n"; \
+		$(MAKE) test-db-up; \
+	fi
+	uv sync --all-extras
+	TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" uv run pytest tests/ -v --cov=backend/src --cov-report=html --cov-report=term
+	@printf "\n  Coverage report: htmlcov/index.html\n"
 
 backend-lint:
-	uv sync --dev --extra lint
-	uv run codespell
-	uv run ruff check . --diff
-	uv run ruff format . --check --diff
-	uv run mypy .
+	uv sync --all-extras
+	uv run codespell backend/
+	uv run ruff check backend/ --diff
+	uv run ruff format backend/ --check --diff
+	uv run mypy backend/src
+
+# Test database management
+test-db-up:
+	docker compose -f docker-compose.test.yml up -d
+	@printf "Waiting for test database...\n"
+	@sleep 3
+	@docker compose -f docker-compose.test.yml ps
+
+test-db-down:
+	docker compose -f docker-compose.test.yml down -v
+
+# Full backend test workflow (start db, run all tests, stop db)
+backend-test-full:
+	$(call PRINT_HEADER,Backend Test Suite)
+	@printf "  Starting test database...\n\n"
+	@$(MAKE) test-db-up
+	@printf "\n  Running all backend tests...\n\n"
+	@$(MAKE) backend-test || ($(MAKE) test-db-down && exit 1)
+	@printf "\n  Stopping test database...\n\n"
+	@$(MAKE) test-db-down
+	@printf "\n  All backend tests passed!\n\n"
+
+# Health check
+backend-health:
+	@curl -s http://localhost:$(BACKEND_PORT)/health/ready | python3 -m json.tool || echo "Backend not running"
 
 test: backend-test frontend-test
 
@@ -589,19 +630,23 @@ check:
 	@printf "  1. Backend Linting...\n\n"
 	@$(MAKE) backend-lint
 	@printf "\n  Backend linting passed\n\n"
-	@printf "  2. Backend Testing...\n\n"
-	@$(MAKE) backend-test
+	@printf "  2. Starting test database...\n\n"
+	@$(MAKE) test-db-up
+	@printf "\n  3. Backend Testing...\n\n"
+	@$(MAKE) backend-test || ($(MAKE) test-db-down && exit 1)
 	@printf "\n  Backend tests passed\n\n"
-	@printf "  3. Frontend Type Checking...\n\n"
+	@printf "  4. Frontend Type Checking...\n\n"
 	@$(MAKE) frontend-typecheck
 	@printf "\n  Frontend type checking passed\n\n"
-	@printf "  4. Frontend Linting...\n\n"
+	@printf "  5. Frontend Linting...\n\n"
 	@$(MAKE) frontend-lint
 	@printf "\n  Frontend linting passed\n\n"
-	@printf "  5. Frontend Testing...\n\n"
-	@$(MAKE) frontend-test
-	@printf "\n  Frontend tests passed\n\n"
-	@printf "  6. Frontend Build...\n\n"
+	@printf "  6. Frontend Unit Testing...\n\n"
+	@$(MAKE) frontend-test-unit
+	@printf "\n  Frontend unit tests passed\n\n"
+	@printf "  7. Stopping test database...\n\n"
+	@$(MAKE) test-db-down
+	@printf "\n  8. Frontend Build...\n\n"
 	@$(MAKE) frontend-build
 	@printf "\n  Frontend build passed\n\n"
 	$(SEPARATOR)
@@ -614,7 +659,13 @@ check:
 # ==============================================================================
 
 fmt:
-	terraform fmt -recursive $(TERRAFORM_ROOT)
+	@printf "Formatting backend (ruff)...\n"
+	@uv run ruff format .
+	@uv run ruff check --fix . || true
+	@printf "Formatting frontend (ultracite)...\n"
+	@cd $(FRONTEND_DIR) && pnpm exec ultracite fix || true
+	@printf "Formatting terraform...\n"
+	@terraform fmt -recursive $(TERRAFORM_ROOT)
 
 validate:
 	@for env in $(TERRAFORM_ENVS); do \

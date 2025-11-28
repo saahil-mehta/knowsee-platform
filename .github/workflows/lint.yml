@@ -1,9 +1,14 @@
 name: Lint Frontend
+
 on:
+  workflow_call:
   push:
     paths:
-      - 'frontend/**'
-      - '.github/workflows/lint.yml'
+      - "frontend/**"
+      - ".github/workflows/lint.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
 
 jobs:
   lint:

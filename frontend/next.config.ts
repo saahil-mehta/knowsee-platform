@@ -17,8 +17,13 @@ const nextConfig: NextConfig = {
     ],
   },
   // Proxy API calls to Python backend in development
-  async rewrites() {
-    return [
+  // Skip proxy in test mode to use frontend mock models
+  rewrites() {
+    if (process.env.PLAYWRIGHT === "True") {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve([
       {
         source: "/api/chat",
         destination:
@@ -26,7 +31,7 @@ const nextConfig: NextConfig = {
             ? "http://127.0.0.1:8000/api/chat"
             : "/api/chat",
       },
-    ];
+    ]);
   },
 };
 

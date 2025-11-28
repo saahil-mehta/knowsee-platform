@@ -35,12 +35,21 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const {
-    chatId,
-    messageId,
-    type,
-  }: { chatId: string; messageId: string; type: "up" | "down" } =
-    await request.json();
+  let chatId: string;
+  let messageId: string;
+  let type: "up" | "down";
+
+  try {
+    const body = await request.json();
+    chatId = body.chatId;
+    messageId = body.messageId;
+    type = body.type;
+  } catch {
+    return new ChatSDKError(
+      "bad_request:api",
+      "Invalid JSON body. Parameters chatId, messageId, and type are required."
+    ).toResponse();
+  }
 
   if (!chatId || !messageId || !type) {
     return new ChatSDKError(

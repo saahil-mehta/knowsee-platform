@@ -51,7 +51,9 @@ def stream_langgraph_response(
                 if isinstance(message_chunk, AIMessageChunk):
                     content = message_chunk.content
 
+                    # Handle content which can be str or list
                     if content:
+                        content_str = content if isinstance(content, str) else str(content)
                         if not text_started:
                             yield format_sse({"type": "text-start", "id": text_stream_id})
                             text_started = True
@@ -60,10 +62,10 @@ def stream_langgraph_response(
                             {
                                 "type": "text-delta",
                                 "id": text_stream_id,
-                                "delta": content,
+                                "delta": content_str,
                             }
                         )
-                        accumulated_content += content
+                        accumulated_content += content_str
 
         # End text stream
         if text_started:
@@ -112,7 +114,7 @@ def convert_to_langgraph_messages(messages: list[dict[str, Any]]) -> list[BaseMe
     Returns:
         List of LangChain BaseMessage objects.
     """
-    langgraph_messages = []
+    langgraph_messages: list[BaseMessage] = []
 
     for msg in messages:
         role = msg.get("role", "user")
