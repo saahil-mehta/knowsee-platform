@@ -4,39 +4,56 @@ import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from functools import lru_cache
 
 from dotenv import load_dotenv
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 load_dotenv()
-
-# Convert postgres:// to postgresql+asyncpg:// for async driver
-_postgres_url = os.getenv("POSTGRES_URL", "")
-DATABASE_URL = _postgres_url.replace("postgres://", "postgresql+asyncpg://").replace(
-    "postgresql://", "postgresql+asyncpg://"
-)
 
 # Configuration from environment
 DB_POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "30"))
 DB_HEALTH_CHECK_TIMEOUT = float(os.getenv("DB_HEALTH_CHECK_TIMEOUT", "2.0"))
 
-# Create async engine with connection pooling
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=DB_POOL_TIMEOUT,
-)
 
-# Session factory
-async_session_factory = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+def get_database_url() -> str:
+    """Get the database URL, converting to async driver format."""
+    postgres_url = os.getenv("POSTGRES_URL", "")
+    return postgres_url.replace("postgres://", "postgresql+asyncpg://").replace(
+        "postgresql://", "postgresql+asyncpg://"
+    )
+
+
+@lru_cache(maxsize=1)
+def get_engine() -> AsyncEngine:
+    """Create async engine lazily on first access.
+
+    Uses lru_cache to ensure only one engine is created.
+    """
+    database_url = get_database_url()
+    if not database_url:
+        raise RuntimeError(
+            "POSTGRES_URL environment variable not set. "
+            "Set it to a PostgreSQL connection string."
+        )
+    return create_async_engine(
+        database_url,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=DB_POOL_TIMEOUT,
+    )
+
+
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Get the session factory, creating engine if needed."""
+    return async_sessionmaker(
+        get_engine(),
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
 
 @asynccontextmanager
@@ -48,7 +65,8 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             result = await session.execute(query)
             # auto-commits on success, auto-rollbacks on exception
     """
-    async with async_session_factory() as session:
+    session_factory = get_session_factory()
+    async with session_factory() as session:
         try:
             yield session
             await session.commit()
@@ -81,7 +99,8 @@ async def check_db_health(timeout: float | None = None) -> dict[str, str | bool 
 
             start = time.perf_counter()
 
-            async with async_session_factory() as session:
+            session_factory = get_session_factory()
+            async with session_factory() as session:
                 await session.execute(text("SELECT 1"))
 
             latency_ms = round((time.perf_counter() - start) * 1000, 2)

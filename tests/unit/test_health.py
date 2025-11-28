@@ -11,15 +11,20 @@ class TestCheckDbHealth:
     @pytest.mark.asyncio
     async def test_healthy_database(self) -> None:
         """Test that a healthy database returns success."""
+        from contextlib import asynccontextmanager
+
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock()
 
-        with patch(
-            "backend.src.db.config.async_session_factory"
-        ) as mock_factory:
-            mock_factory.return_value.__aenter__.return_value = mock_session
-            mock_factory.return_value.__aexit__.return_value = None
+        @asynccontextmanager
+        async def mock_session_ctx():
+            yield mock_session
 
+        mock_factory = lambda: mock_session_ctx()
+
+        with patch(
+            "backend.src.db.config.get_session_factory", return_value=mock_factory
+        ):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=2.0)
@@ -31,13 +36,18 @@ class TestCheckDbHealth:
     @pytest.mark.asyncio
     async def test_database_connection_error(self) -> None:
         """Test that database connection errors are caught."""
-        with patch(
-            "backend.src.db.config.async_session_factory"
-        ) as mock_factory:
-            mock_factory.return_value.__aenter__.side_effect = Exception(
-                "Connection refused"
-            )
+        from contextlib import asynccontextmanager
 
+        @asynccontextmanager
+        async def mock_session_ctx():
+            raise Exception("Connection refused")
+            yield  # noqa: B901 - unreachable but required for generator
+
+        mock_factory = lambda: mock_session_ctx()
+
+        with patch(
+            "backend.src.db.config.get_session_factory", return_value=mock_factory
+        ):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=2.0)
@@ -50,6 +60,7 @@ class TestCheckDbHealth:
     async def test_database_timeout(self) -> None:
         """Test that database timeout is handled correctly."""
         import asyncio
+        from contextlib import asynccontextmanager
 
         async def slow_execute(*args, **kwargs):
             await asyncio.sleep(5)
@@ -57,12 +68,15 @@ class TestCheckDbHealth:
         mock_session = AsyncMock()
         mock_session.execute = slow_execute
 
-        with patch(
-            "backend.src.db.config.async_session_factory"
-        ) as mock_factory:
-            mock_factory.return_value.__aenter__.return_value = mock_session
-            mock_factory.return_value.__aexit__.return_value = None
+        @asynccontextmanager
+        async def mock_session_ctx():
+            yield mock_session
 
+        mock_factory = lambda: mock_session_ctx()
+
+        with patch(
+            "backend.src.db.config.get_session_factory", return_value=mock_factory
+        ):
             from backend.src.db.config import check_db_health
 
             result = await check_db_health(timeout=0.1)
