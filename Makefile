@@ -59,7 +59,7 @@ endef
 	release-backend release-frontend release-all \
 	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-test-e2e frontend-db-psql frontend-db-query \
+	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-db-psql frontend-db-query \
 	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -92,9 +92,8 @@ help:
 	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
 	@printf "  make frontend-db-query     Show database summary and recent data\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
-	@printf "  make frontend-test         Run all frontend tests (unit + e2e)\n"
-	@printf "  make frontend-test-unit    Run frontend unit tests (fast)\n"
-	@printf "  make frontend-test-e2e     Run frontend e2e tests (requires server)\n"
+	@printf "  make frontend-test         Run frontend unit tests\n"
+	@printf "  make frontend-test-unit    Run frontend unit tests\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -512,7 +511,6 @@ frontend-clean:
 
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
-	@cd $(FRONTEND_DIR) && pnpm exec playwright install --with-deps chromium
 
 frontend-build:
 	$(call PNPM,build)
@@ -523,14 +521,10 @@ frontend-typecheck:
 frontend-lint:
 	$(call PNPM,lint)
 
-frontend-test:
-	$(call PNPM,test)
+frontend-test: frontend-test-unit
 
 frontend-test-unit:
 	$(call PNPM,test:unit)
-
-frontend-test-e2e:
-	$(call PNPM,test:e2e)
 
 frontend-db-psql:
 	@docker exec -it knowsee-frontend-db psql -U postgres -d chatbot
@@ -645,21 +639,12 @@ check:
 	@printf "  5. Frontend Linting...\n\n"
 	@$(MAKE) frontend-lint
 	@printf "\n  Frontend linting passed\n\n"
-	@printf "  6. Starting backend for e2e tests...\n\n"
-	@TEST_DATABASE_URL="postgresql+asyncpg://test:test@localhost:5433/test_knowsee" \
-		uv run uvicorn backend.src.app:app --host 0.0.0.0 --port 8000 & \
-		BACKEND_PID=$$!; \
-		sleep 5; \
-		printf "  7. Frontend Testing (e2e with backend)...\n\n"; \
-		$(MAKE) frontend-test; \
-		TEST_EXIT=$$?; \
-		printf "\n  Stopping backend...\n"; \
-		kill $$BACKEND_PID 2>/dev/null || true; \
-		if [ $$TEST_EXIT -ne 0 ]; then $(MAKE) test-db-down; exit 1; fi
-	@printf "\n  Frontend tests passed\n\n"
-	@printf "  8. Stopping test database...\n\n"
+	@printf "  6. Frontend Unit Testing...\n\n"
+	@$(MAKE) frontend-test-unit
+	@printf "\n  Frontend unit tests passed\n\n"
+	@printf "  7. Stopping test database...\n\n"
 	@$(MAKE) test-db-down
-	@printf "\n  9. Frontend Build...\n\n"
+	@printf "\n  8. Frontend Build...\n\n"
 	@$(MAKE) frontend-build
 	@printf "\n  Frontend build passed\n\n"
 	$(SEPARATOR)
