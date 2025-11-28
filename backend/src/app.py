@@ -135,7 +135,7 @@ async def health_readiness() -> JSONResponse:
 async def chat_stream(request: StreamingChatRequest) -> StreamingResponse:
     """Process a chat message and stream the response.
 
-    This endpoint implements the Vercel AI SDK Data Stream Protocol.
+    This endpoint implements the Vercel AI SDK Data Stream Protocol v5.
 
     Args:
         request: Chat request from the frontend.
@@ -146,7 +146,7 @@ async def chat_stream(request: StreamingChatRequest) -> StreamingResponse:
     # Convert the message to the format expected by the stream handler
     messages = [request.message.model_dump()]
 
-    return create_streaming_response(messages)
+    return await create_streaming_response(messages)
 
 
 @app.post("/chat", response_model=SimpleChatResponse)
