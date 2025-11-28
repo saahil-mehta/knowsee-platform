@@ -19,6 +19,12 @@ dependencies = [
     # Utilities
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
+    # Observability (required - used unconditionally in app.py)
+    "structlog>=24.0.0",
+    "prometheus-fastapi-instrumentator>=6.1.0",
+    "prometheus-client>=0.20.0",
+    # Resilience (required - used unconditionally in graph.py)
+    "tenacity>=8.2.0",
 ]
 
 [project.optional-dependencies]
@@ -35,17 +41,12 @@ lint = [
     "mypy>=1.13.0",
     "codespell>=2.3.0",
 ]
-observability = [
-    "structlog>=24.0.0",
-    "prometheus-fastapi-instrumentator>=6.1.0",
+tracing = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-instrumentation-fastapi>=0.44b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.44b0",
     "opentelemetry-exporter-otlp>=1.20.0",
-]
-resilience = [
-    "tenacity>=8.2.0",
 ]
 
 [build-system]
