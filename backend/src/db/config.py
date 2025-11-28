@@ -39,8 +39,7 @@ def get_engine() -> AsyncEngine:
     database_url = get_database_url()
     if not database_url:
         raise RuntimeError(
-            "POSTGRES_URL environment variable not set. "
-            "Set it to a PostgreSQL connection string."
+            "POSTGRES_URL environment variable not set. Set it to a PostgreSQL connection string."
         )
     return create_async_engine(
         database_url,
