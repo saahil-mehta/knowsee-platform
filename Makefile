@@ -1,7 +1,7 @@
 # ==============================================================================
 # Knowsee Platform Unified Makefile
 # ============================================================================== 
-# Combines ADK agent workflows, frontend tooling, and Terraform automation.
+# Combines LangGraph agent workflows, frontend tooling, and Terraform automation.
 # ==============================================================================
 
 SHELL := /bin/bash
@@ -13,7 +13,6 @@ ENV_COMPOSE = set -a && source .env && $(LOCAL_COMPOSE)
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
-PLAYGROUND_PORT ?= 8501
 BACKEND_HOST ?= localhost
 BACKEND_PORT ?= 8000
 GCP_REGION := europe-west2
@@ -53,7 +52,7 @@ endef
 
 .PHONY: \
 	help install upgrade outdated \
-	playground local-backend data-ingestion \
+	local-backend data-ingestion \
 	docker-auth docker-build-backend docker-build-frontend docker-push-backend docker-push-frontend \
 	deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
@@ -77,7 +76,6 @@ help:
 	@printf "  make install           Install uv deps + frontend packages\n"
 	@printf "  make upgrade           Upgrade all dependencies to latest compatible versions\n"
 	@printf "  make outdated          Check for outdated dependencies without upgrading\n"
-	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend     Run FastAPI backend only (:$(BACKEND_PORT))\n"
 	@printf "  make local             Start full local stack (backend + frontend)\n"
 	@printf "  make local-down        Stop local stack\n"
@@ -278,16 +276,8 @@ gcp-status:
 	@printf "\n"
 
 # ==============================================================================
-# Backend (ADK agent) workflows
+# Backend (LangGraph) workflows
 # ==============================================================================
-
-playground:
-	$(call PRINT_HEADER,Agent Playground)
-	@printf "  Starting your agent playground...\n"
-	@printf "  IMPORTANT: Select the 'app' folder to interact with your agent.\n"
-	$(SEPARATOR)
-	@printf "\n"
-	uv run adk web . --port $(PLAYGROUND_PORT) --reload_agents
 
 local-backend:
 	uv run uvicorn backend.src.app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
@@ -473,6 +463,10 @@ drift:
 # ==============================================================================
 
 frontend:
+	@test -d $(FRONTEND_DIR)/node_modules || { \
+		printf "\n  Dependencies not installed. Running 'make install'...\n\n"; \
+		$(MAKE) install; \
+	}
 	$(call PRINT_HEADER,Frontend Development)
 	@printf "  Setting up PostgreSQL database...\n\n"
 	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh

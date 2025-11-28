@@ -28,7 +28,7 @@ Ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/knowsee-platform.git
+git clone https://github.com/saahil-mehta/knowsee-platform.git
 cd knowsee-platform
 
 # Install dependencies
@@ -393,7 +393,7 @@ See [docs/GCP_PROFILE_MANAGEMENT.md](docs/GCP_PROFILE_MANAGEMENT.md) for detaile
 ## Getting Help
 
 - Review existing [documentation](docs/)
-- Check [issues](https://github.com/your-org/knowsee-platform/issues) for similar problems
+- Check [issues](https://github.com/saahil-mehta/knowsee-platform/issues) for similar problems
 - Open a new issue with a clear description
 
 ## Code of Conduct

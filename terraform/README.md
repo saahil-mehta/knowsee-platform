@@ -1,6 +1,6 @@
 # Knowsee Platform - Terraform Infrastructure
 
-This directory contains the Terraform infrastructure-as-code for the Knowsee platform, including ADK agent infrastructure (formerly in `deployment/terraform/`).
+This directory contains the Terraform infrastructure-as-code for the Knowsee platform.
 
 ## Architecture
 
@@ -85,7 +85,7 @@ environments/<env>/
 
 All modules are located in `terraform/modules/`:
 
-### ADK-Specific Modules
+### Platform Modules
 - **cloud_run_service** - Cloud Run v2 services (backend/frontend)
 - **discovery_engine** - Vertex AI Discovery Engine (Search) datastore + search engine
 - **log_sink** - BigQuery log sinks for telemetry and feedback
@@ -224,9 +224,6 @@ make help
 ```bash
 # Run Docker Compose stack locally
 make dev-local
-
-# Run ADK playground for agent development
-make playground
 ```
 
 ### Cloud Development

@@ -59,7 +59,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/your-org/knowsee-platform.git
+git clone https://github.com/saahil-mehta/knowsee-platform.git
 cd knowsee-platform
 make install
 ```
@@ -92,8 +92,8 @@ POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/chatbot
 ### 4. Run Locally
 
 ```bash
-# Option A: Full stack (recommended)
-make frontend          # Starts PostgreSQL + Next.js on :3000
+# Option A: Full stack (recommended for new users)
+make frontend          # Sets up PostgreSQL, prompts for test user credentials, starts Next.js on :3000
 make local-backend     # In another terminal, starts FastAPI on :8000
 
 # Option B: Docker Compose stack
@@ -101,6 +101,8 @@ make local             # Starts entire stack via Docker
 make local-logs        # Stream logs
 make local-down        # Stop stack
 ```
+
+> **First-time setup**: `make frontend` automatically provisions the PostgreSQL database via Docker and prompts you to create a test user (email + password). This only happens on first run.
 
 Visit [http://localhost:3000](http://localhost:3000) to access the chatbot.
 
@@ -115,9 +117,8 @@ Run `make help` for all available commands. Key commands:
 | Command | Description |
 |---------|-------------|
 | `make install` | Install all dependencies (Python + Node) |
-| `make playground` | Launch ADK Streamlit agent playground |
 | `make local-backend` | Run FastAPI backend only (:8000) |
-| `make frontend` | Start Next.js with database (:3000) |
+| `make frontend` | Set up database, create user, start Next.js (:3000) |
 
 #### Quality
 
