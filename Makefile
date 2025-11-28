@@ -131,13 +131,18 @@ help:
 # Setup
 # ==============================================================================
 
-install: frontend-install
+install:
 	@command -v uv >/dev/null 2>&1 || { \
 		echo "uv is not installed. Installing..."; \
 		curl -LsSf https://astral.sh/uv/0.8.13/install.sh | sh; \
 		source $$HOME/.local/bin/env; \
 	}
+	@command -v pnpm >/dev/null 2>&1 || { \
+		echo "pnpm is not installed. Installing via npm..."; \
+		npm install -g pnpm; \
+	}
 	@uv sync
+	@$(MAKE) frontend-install
 	@git config core.hooksPath .githooks
 	@printf "Git hooks configured (.githooks)\n"
 
