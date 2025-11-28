@@ -4,7 +4,8 @@ import json
 
 from langchain_core.messages import HumanMessage
 
-from backend.src.stream import convert_to_langgraph_messages, format_sse
+from backend.src.protocol import format_sse
+from backend.src.stream import convert_to_langgraph_messages
 
 
 class TestFormatSSE:

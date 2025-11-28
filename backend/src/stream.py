@@ -64,7 +64,8 @@ async def stream_langgraph_response(
 
             # Handle text streaming from chat model
             if event_type == "on_chat_model_stream":
-                chunk = event.get("data", {}).get("chunk")
+                data: dict[str, Any] = event.get("data", {})  # type: ignore[assignment]
+                chunk = data.get("chunk")
                 if chunk:
                     content = _extract_content(chunk)
                     if content:
@@ -75,7 +76,8 @@ async def stream_langgraph_response(
 
             # Extract usage from chat model end
             elif event_type == "on_chat_model_end":
-                output = event.get("data", {}).get("output")
+                data = event.get("data", {})  # type: ignore[assignment]
+                output = data.get("output")
                 if output and hasattr(output, "usage_metadata"):
                     meta = output.usage_metadata
                     if isinstance(meta, dict):
