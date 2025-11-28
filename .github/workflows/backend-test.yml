@@ -17,6 +17,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16-alpine
@@ -53,7 +54,7 @@ jobs:
         if: success()
         run: uv run pytest tests/integration -v
         env:
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_knowsee
+          TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_knowsee
 
       - name: Upload coverage to Codecov
         if: success()

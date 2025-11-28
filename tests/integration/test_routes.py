@@ -2,32 +2,38 @@
 
 These tests use the test database to verify end-to-end functionality
 of the API endpoints.
-
-Note: Some tests are skipped due to async event loop conflicts between
-the test fixtures and FastAPI's database session management. The direct
-database tests in test_db.py provide equivalent coverage.
 """
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.src.app import app
-from backend.src.db.models import Base
-from tests.conftest import TEST_DATABASE_URL
 
 # Skip all tests if test database is not available
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-async def integration_client(test_engine):
-    """Create a test client with real database."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+async def integration_client(test_session):
+    """Create a test client that uses the test database session.
+
+    Patches get_session to return the test session, ensuring all route
+    database operations use the same session as the test fixtures.
+    """
+
+    @asynccontextmanager
+    async def mock_get_session():
+        yield test_session
+
+    with patch("backend.src.api.routes.get_session", mock_get_session):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
 
 class TestHealthEndpointsIntegration:
@@ -51,7 +57,7 @@ class TestHealthEndpointsIntegration:
 class TestUserRoutesIntegration:
     """Integration tests for user endpoints."""
 
-    async def test_create_and_get_user(self, integration_client, test_session):
+    async def test_create_and_get_user(self, integration_client):
         """Test creating and retrieving a user."""
         email = f"test-{uuid4()}@example.com"
         password = "testpassword123"
@@ -78,7 +84,6 @@ class TestUserRoutesIntegration:
         assert len(users) == 1
         assert users[0]["email"] == email
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
     async def test_get_nonexistent_user(self, integration_client):
         """Test getting a user that doesn't exist."""
         response = await integration_client.get(
@@ -93,8 +98,7 @@ class TestUserRoutesIntegration:
 class TestChatRoutesIntegration:
     """Integration tests for chat endpoints."""
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
-    async def test_create_and_get_chat(self, integration_client, test_session):
+    async def test_create_and_get_chat(self, integration_client):
         """Test creating and retrieving a chat."""
         # First create a user
         user_email = f"chatuser-{uuid4()}@example.com"
@@ -130,8 +134,7 @@ class TestChatRoutesIntegration:
         assert chat["id"] == chat_id
         assert chat["title"] == "Test Chat"
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
-    async def test_get_chats_by_user_with_pagination(self, integration_client, test_session):
+    async def test_get_chats_by_user_with_pagination(self, integration_client):
         """Test paginated chat retrieval."""
         # Create user
         user_email = f"paginationuser-{uuid4()}@example.com"
@@ -167,8 +170,7 @@ class TestChatRoutesIntegration:
         assert len(data["chats"]) == 3
         assert data["hasMore"] is True
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
-    async def test_delete_chat(self, integration_client, test_session):
+    async def test_delete_chat(self, integration_client):
         """Test deleting a chat."""
         # Create user and chat
         user_email = f"deleteuser-{uuid4()}@example.com"
@@ -202,8 +204,7 @@ class TestChatRoutesIntegration:
 class TestMessageRoutesIntegration:
     """Integration tests for message endpoints."""
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
-    async def test_save_and_get_messages(self, integration_client, test_session):
+    async def test_save_and_get_messages(self, integration_client):
         """Test saving and retrieving messages."""
         # Create user and chat
         user_email = f"msguser-{uuid4()}@example.com"
@@ -264,8 +265,7 @@ class TestMessageRoutesIntegration:
 class TestVoteRoutesIntegration:
     """Integration tests for vote endpoints."""
 
-    @pytest.mark.skip(reason="Async event loop conflict with production DB session")
-    async def test_vote_on_message(self, integration_client, test_session):
+    async def test_vote_on_message(self, integration_client):
         """Test voting on a message."""
         # Create user, chat, and message
         user_email = f"voteuser-{uuid4()}@example.com"

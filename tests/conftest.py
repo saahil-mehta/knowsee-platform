@@ -65,6 +65,9 @@ async def test_engine():
         TEST_DATABASE_URL,
         echo=False,
         pool_pre_ping=True,
+        pool_size=2,
+        max_overflow=3,
+        pool_timeout=10,
     )
 
     # Create all tables

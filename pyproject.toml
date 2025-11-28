@@ -71,6 +71,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+timeout = 30
+timeout_method = "thread"
 
 [tool.codespell]
 ignore-words-list = "selectin"
