@@ -124,7 +124,7 @@ help:
 	@printf "  make check             Run full test suite (lint+typecheck+test+build)\n"
 	@printf "  make lint / make test  Lint or test backend + frontend\n"
 	@printf "  make data-ingestion    Submit RAG ingestion pipeline\n"
-	@printf "  make fmt / validate    Terraform formatting / validation\n"
+	@printf "  make fmt               Format all code (backend, frontend, terraform)\n"
 	@printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
 # ==============================================================================
@@ -138,6 +138,8 @@ install: frontend-install
 		source $$HOME/.local/bin/env; \
 	}
 	@uv sync
+	@git config core.hooksPath .githooks
+	@printf "Git hooks configured (.githooks)\n"
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
@@ -657,7 +659,13 @@ check:
 # ==============================================================================
 
 fmt:
-	terraform fmt -recursive $(TERRAFORM_ROOT)
+	@printf "Formatting backend (ruff)...\n"
+	@uv run ruff format .
+	@uv run ruff check --fix . || true
+	@printf "Formatting frontend (ultracite)...\n"
+	@cd $(FRONTEND_DIR) && pnpm exec ultracite fix || true
+	@printf "Formatting terraform...\n"
+	@terraform fmt -recursive $(TERRAFORM_ROOT)
 
 validate:
 	@for env in $(TERRAFORM_ENVS); do \

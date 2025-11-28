@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from functools import lru_cache
@@ -99,8 +100,6 @@ async def check_db_health(timeout: float | None = None) -> dict[str, str | bool 
 
     try:
         async with asyncio.timeout(check_timeout):
-            import time
-
             start = time.perf_counter()
 
             session_factory = get_session_factory()
