@@ -8,7 +8,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 from backend.src.graph import chatbot_graph
 from backend.src.protocol import (
@@ -155,7 +155,8 @@ def convert_to_langgraph_messages(messages: list[dict[str, Any]]) -> list[BaseMe
 
         if role == "user":
             langgraph_messages.append(HumanMessage(content=content))
-        # Skip assistant messages for now (we're generating new ones)
+        elif role == "assistant":
+            langgraph_messages.append(AIMessage(content=content))
 
     return langgraph_messages
 
