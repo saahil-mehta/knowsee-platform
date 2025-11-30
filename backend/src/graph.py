@@ -78,12 +78,14 @@ chatbot_graph = create_chatbot_graph()
 
 
 # Title generation LLM (lighter config, lower temperature for consistency)
+# Note: Gemini 2.5 Flash uses "thinking" tokens internally, so max_output_tokens
+# must be high enough to cover both thinking overhead (~50-100) and actual output.
 _title_llm = ChatVertexAI(
     model="gemini-2.5-flash",
     project=os.getenv("GOOGLE_CLOUD_PROJECT", "knowsee-platform-development"),
     location=os.getenv("GOOGLE_CLOUD_LOCATION", "europe-west2"),
     temperature=0.3,
-    max_output_tokens=50,
+    max_output_tokens=256,
 )
 
 TITLE_PROMPT = """Generate a short, concise title (max 6 words) for this chat.
