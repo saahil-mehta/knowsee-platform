@@ -5,6 +5,7 @@ Thank you for your interest in contributing to Knowsee Platform. This document p
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Git Hooks](#git-hooks)
 - [Development Workflow](#development-workflow)
 - [Code Style](#code-style)
 - [Commit Guidelines](#commit-guidelines)
@@ -34,9 +35,6 @@ cd knowsee-platform
 # Install dependencies
 make install
 
-# Configure git hooks
-git config commit.template .gitmessage.txt
-
 # Set up GCP authentication
 make gcp-login
 make gcp-switch PROFILE=your-profile
@@ -56,6 +54,51 @@ For frontend development, create `frontend/.env.local`:
 ```bash
 BACKEND_URL=http://localhost:8000
 AUTH_SECRET=your-auth-secret
+```
+
+## Git Hooks
+
+Git hooks are configured automatically when you run `make install`. The hooks live in `.githooks/` and are shared across the team.
+
+### Pre-commit Hook
+
+The pre-commit hook (`.githooks/pre-commit`) runs automatically before each commit:
+
+1. **Auto-formatting** - Runs `ruff format` (Python) and `ultracite` (TypeScript)
+2. **Linting fixes** - Applies safe auto-fixes from linters
+3. **Doc sync warning** - Warns if you modify config files without updating docs
+
+#### Documentation Sync Check
+
+When you modify configuration files (`Makefile`, `docker-compose.yml`, `pyproject.toml`, `package.json`) without updating documentation (`README.md`, `docs/`, `CONTRIBUTING.md`), you'll see:
+
+```
+⚠️  Config files modified but no documentation updated.
+   Changed: Makefile pyproject.toml
+   Consider checking if README.md or docs/ need updates.
+```
+
+This is a reminder, not a blocker. The same check runs in CI on pull requests.
+
+### Commit Message Template
+
+Configure the commit message template for conventional commits:
+
+```bash
+git config commit.template .gitmessage.txt
+```
+
+### Troubleshooting Hooks
+
+```bash
+# Verify hooks are configured
+git config core.hooksPath  # Should output: .githooks
+
+# Test hooks manually
+.githooks/pre-commit
+
+# Skip hooks for emergency commits (use sparingly)
+git commit --no-verify -m "emergency fix"
 ```
 
 ## Development Workflow

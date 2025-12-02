@@ -1,0 +1,49 @@
+name: Doc Sync Check
+
+on:
+  pull_request:
+    paths:
+      - 'docker-compose.yml'
+      - 'docker-compose.*.yml'
+      - 'Makefile'
+      - 'pyproject.toml'
+      - 'package.json'
+      - 'frontend/package.json'
+
+jobs:
+  check-docs-updated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if documentation was updated
+        run: |
+          # Same patterns as .githooks/pre-commit
+          CONFIG_FILES="docker-compose\.yml|Makefile|pyproject\.toml|package\.json"
+          DOC_FILES="README\.md|docs/|CLAUDE\.md|CONTRIBUTING\.md"
+
+          # Get changed files in this PR
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Check if config files changed
+          CONFIG_CHANGED=$(echo "$CHANGED" | grep -E "$CONFIG_FILES" || true)
+          DOC_CHANGED=$(echo "$CHANGED" | grep -E "$DOC_FILES" || true)
+
+          if [ -n "$CONFIG_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
+            echo ""
+            echo "::warning::Configuration files modified without documentation updates."
+            echo ""
+            echo "Changed config files:"
+            echo "$CONFIG_CHANGED" | sed 's/^/  - /'
+            echo ""
+            echo "Consider checking if these docs need updates:"
+            echo "  - README.md"
+            echo "  - docs/"
+            echo "  - CONTRIBUTING.md"
+            echo ""
+            echo "This is a reminder, not a blocker. If docs are up-to-date, ignore this warning."
+          else
+            echo "Documentation sync check passed."
+          fi
