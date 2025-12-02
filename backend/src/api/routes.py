@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from backend.src.db import queries
 from backend.src.db.config import get_session
@@ -25,12 +25,11 @@ router = APIRouter(prefix="/api/db", tags=["database"])
 class UserResponse(BaseModel):
     """User response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     email: str
     password: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class ChatCreate(BaseModel):
@@ -45,15 +44,14 @@ class ChatCreate(BaseModel):
 class ChatResponse(BaseModel):
     """Chat response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     createdAt: datetime
     title: str
     userId: UUID
     visibility: str
     lastContext: dict[str, Any] | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class ChatsResponse(BaseModel):
@@ -77,15 +75,14 @@ class MessageCreate(BaseModel):
 class MessageResponse(BaseModel):
     """Message response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     chatId: UUID
     role: str
     parts: list[Any]
     attachments: list[Any]
     createdAt: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class VoteRequest(BaseModel):
@@ -99,12 +96,11 @@ class VoteRequest(BaseModel):
 class VoteResponse(BaseModel):
     """Vote response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     chatId: UUID
     messageId: UUID
     isUpvoted: bool
-
-    class Config:
-        from_attributes = True
 
 
 class DocumentCreate(BaseModel):
@@ -120,15 +116,14 @@ class DocumentCreate(BaseModel):
 class DocumentResponse(BaseModel):
     """Document response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     createdAt: datetime
     title: str
     content: str | None
     kind: str
     userId: UUID
-
-    class Config:
-        from_attributes = True
 
 
 class SuggestionCreate(BaseModel):
@@ -148,6 +143,8 @@ class SuggestionCreate(BaseModel):
 class SuggestionResponse(BaseModel):
     """Suggestion response model."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     documentId: UUID
     documentCreatedAt: datetime
@@ -157,9 +154,6 @@ class SuggestionResponse(BaseModel):
     isResolved: bool
     userId: UUID
     createdAt: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class StreamCreate(BaseModel):

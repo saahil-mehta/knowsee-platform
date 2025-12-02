@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from backend.src.api import router as db_router
 from backend.src.db.config import check_db_health
@@ -40,35 +40,32 @@ app.include_router(db_router)
 class MessagePart(BaseModel):
     """A part of a message (text, file, tool, etc.)."""
 
+    # Allow additional fields for tool parts, files, etc.
+    model_config = ConfigDict(extra="allow")
+
     type: str
     text: Optional[str] = None
-    # Allow additional fields for tool parts, files, etc.
-
-    class Config:
-        extra = "allow"
 
 
 class ChatMessage(BaseModel):
     """A chat message from the frontend."""
 
+    model_config = ConfigDict(extra="allow")
+
     role: str
     content: Optional[str] = None
     parts: Optional[list[MessagePart]] = None
-
-    class Config:
-        extra = "allow"
 
 
 class StreamingChatRequest(BaseModel):
     """Request model for streaming chat endpoint (Vercel AI SDK format)."""
 
+    model_config = ConfigDict(extra="allow")
+
     id: str
     messages: list[ChatMessage]
     selectedChatModel: Optional[str] = None
     selectedVisibilityType: Optional[str] = None
-
-    class Config:
-        extra = "allow"
 
 
 class SimpleChatRequest(BaseModel):

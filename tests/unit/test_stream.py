@@ -2,7 +2,7 @@
 
 import json
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from backend.src.protocol import format_sse
 from backend.src.stream import convert_to_langgraph_messages
@@ -116,8 +116,8 @@ class TestConvertToLanggraphMessages:
         assert len(result) == 1
         assert result[0].content == "Hello world"
 
-    def test_convert_skips_assistant_messages(self) -> None:
-        """Test that assistant messages are skipped."""
+    def test_convert_includes_assistant_messages(self) -> None:
+        """Test that assistant messages are converted to AIMessage."""
         messages = [
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi there!"},
@@ -125,10 +125,14 @@ class TestConvertToLanggraphMessages:
         ]
         result = convert_to_langgraph_messages(messages)
 
-        # Only user messages should be converted
-        assert len(result) == 2
+        # All messages should be converted for full conversation context
+        assert len(result) == 3
+        assert isinstance(result[0], HumanMessage)
         assert result[0].content == "Hello"
-        assert result[1].content == "How are you?"
+        assert isinstance(result[1], AIMessage)
+        assert result[1].content == "Hi there!"
+        assert isinstance(result[2], HumanMessage)
+        assert result[2].content == "How are you?"
 
     def test_convert_empty_messages(self) -> None:
         """Test converting an empty message list."""
