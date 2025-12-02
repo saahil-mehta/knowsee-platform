@@ -1,15 +1,25 @@
-<p>
-  <img src="assets/logos/links-line.png" alt="Knowsee Icon" width="48" align="left" style="margin-right: 12px;">
+<p align="center">
+  <img src="assets/logos/links-line.png" alt="Knowsee Icon" width="48" style="margin-right: 12px;">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/knowsee-asset-dark/dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/knowsee-asset-light/light.svg">
-    <img alt="Knowsee Platform" src="assets/knowsee-asset-light/light.svg" width="200">
+    <img alt="Knowsee" src="assets/knowsee-asset-light/light.svg" width="200">
   </picture>
 </p>
 
-# Knowsee Platform
+<p align="center">
+  <a href="https://github.com/saahil-mehta/knowsee-platform/actions/workflows/ci.yml">
+    <img src="https://github.com/saahil-mehta/knowsee-platform/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://github.com/saahil-mehta/knowsee-platform/actions/workflows/doc-sync-check.yml">
+    <img src="https://github.com/saahil-mehta/knowsee-platform/actions/workflows/doc-sync-check.yml/badge.svg" alt="Doc Sync">
+  </a>
+</p>
 
-A production-ready conversational AI platform built with LangGraph and Vertex AI on Google Cloud. Features a Next.js chatbot interface powered by the Vercel AI SDK, with a FastAPI backend orchestrating LangGraph agents.
+<p align="center">
+  A production-ready conversational AI platform built with LangGraph and Vertex AI on Google Cloud.<br>
+  Features a Next.js chatbot interface powered by the Vercel AI SDK, with a FastAPI backend orchestrating LangGraph agents.
+</p>
 
 ## Architecture
 
