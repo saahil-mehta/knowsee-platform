@@ -2,6 +2,9 @@
   "name": "ai-chatbot",
   "version": "3.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0 <23.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
@@ -14,11 +17,7 @@
     "test:unit:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@ai-sdk/gateway": "^1.0.15",
-    "@ai-sdk/google": "^2.0.41",
-    "@ai-sdk/provider": "2.0.0",
     "@ai-sdk/react": "2.0.26",
-    "@ai-sdk/xai": "2.0.13",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-python": "^6.1.6",
     "@codemirror/state": "^6.5.0",

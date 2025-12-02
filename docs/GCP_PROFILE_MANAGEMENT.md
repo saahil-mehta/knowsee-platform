@@ -134,7 +134,7 @@ make gcp-status
 make gcp-switch PROFILE=knowsee-dev
 
 # Work on features...
-make playground
+make local-backend
 make deploy
 
 # Switch to staging for testing
@@ -218,7 +218,7 @@ cat ~/.config/gcloud/application_default_credentials.json | grep quota_project
 
 ### Make Targets That Use ADC
 
-- `make playground` (Python SDK calls)
+- `make local-backend` (Python SDK calls)
 - Any Python code using `google-cloud-*` libraries
 
 ## Quick Reference

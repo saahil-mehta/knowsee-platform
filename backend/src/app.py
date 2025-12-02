@@ -6,11 +6,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from backend.src.api import router as db_router
 from backend.src.db.config import check_db_health
-from backend.src.graph import chatbot_graph
+from backend.src.graph import chatbot_graph, generate_title
 from backend.src.observability.middleware import setup_observability
 from backend.src.stream import create_streaming_response
 
@@ -40,35 +40,32 @@ app.include_router(db_router)
 class MessagePart(BaseModel):
     """A part of a message (text, file, tool, etc.)."""
 
+    # Allow additional fields for tool parts, files, etc.
+    model_config = ConfigDict(extra="allow")
+
     type: str
     text: Optional[str] = None
-    # Allow additional fields for tool parts, files, etc.
-
-    class Config:
-        extra = "allow"
 
 
 class ChatMessage(BaseModel):
     """A chat message from the frontend."""
 
+    model_config = ConfigDict(extra="allow")
+
     role: str
     content: Optional[str] = None
     parts: Optional[list[MessagePart]] = None
-
-    class Config:
-        extra = "allow"
 
 
 class StreamingChatRequest(BaseModel):
     """Request model for streaming chat endpoint (Vercel AI SDK format)."""
 
+    model_config = ConfigDict(extra="allow")
+
     id: str
-    message: ChatMessage
+    messages: list[ChatMessage]
     selectedChatModel: Optional[str] = None
     selectedVisibilityType: Optional[str] = None
-
-    class Config:
-        extra = "allow"
 
 
 class SimpleChatRequest(BaseModel):
@@ -81,6 +78,18 @@ class SimpleChatResponse(BaseModel):
     """Response model for simple chat endpoint."""
 
     response: str
+
+
+class TitleRequest(BaseModel):
+    """Request model for title generation endpoint."""
+
+    message: str
+
+
+class TitleResponse(BaseModel):
+    """Response model for title generation endpoint."""
+
+    title: str
 
 
 @app.get("/health")
@@ -143,8 +152,8 @@ async def chat_stream(request: StreamingChatRequest) -> StreamingResponse:
     Returns:
         StreamingResponse with SSE-formatted events.
     """
-    # Convert the message to the format expected by the stream handler
-    messages = [request.message.model_dump()]
+    # Convert messages to the format expected by the stream handler
+    messages = [msg.model_dump() for msg in request.messages]
 
     return await create_streaming_response(messages)
 
@@ -174,3 +183,17 @@ async def chat_simple(request: SimpleChatRequest) -> SimpleChatResponse:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}") from e
+
+
+@app.post("/api/title", response_model=TitleResponse)
+async def generate_chat_title(request: TitleRequest) -> TitleResponse:
+    """Generate a title for a chat based on the first message.
+
+    Args:
+        request: Title request containing the user message.
+
+    Returns:
+        TitleResponse with the generated title.
+    """
+    title = await generate_title(request.message)
+    return TitleResponse(title=title)

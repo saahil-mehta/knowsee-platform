@@ -102,35 +102,9 @@ Knowsee Platform Stack Flow
   └── backend/alembic/              # Alembic DB migrations
       └── versions/                 # Migration scripts
 
-   Key Commands
+  Commands, Migrations, and Environment Variables
 
-  | Command                 | What it does                           |
-  |-------------------------|----------------------------------------|
-  | make local-backend      | Starts Python on :8000                 |
-  | make frontend           | Starts PostgreSQL + Next.js on :3000   |
-  | make backend-lint       | Runs ruff + mypy on Python             |
-  | make frontend-typecheck | Runs tsc on TypeScript                 |
-  | make frontend-build     | Production build of Next.js            |
-  | make check              | Full CI pipeline                       |
-
-  Database Migrations (Alembic)
-
-  | Command                                              | What it does                    |
-  |------------------------------------------------------|---------------------------------|
-  | cd backend && alembic revision -m "description"      | Create new migration            |
-  | cd backend && alembic upgrade head                   | Apply all pending migrations    |
-  | cd backend && alembic downgrade -1                   | Rollback one migration          |
-  | cd backend && alembic current                        | Show current revision           |
-
-  Environment Variables
-
-  Root .env (Python backend):
-  POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/chatbot
-  GOOGLE_CLOUD_PROJECT=...
-
-  frontend/.env.local (Next.js):
-  BACKEND_URL=http://localhost:8000
-  AUTH_SECRET=...
+  See README.md for Make commands, database migrations, and environment setup.
 
   Why This Architecture?
 

@@ -2,7 +2,7 @@
 name = "knowsee-platform"
 version = "0.1.0"
 description = "Knowsee Platform - LangGraph Backend"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     # LangGraph and LangChain
     "langgraph>=0.2.0",

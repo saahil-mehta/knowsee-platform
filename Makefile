@@ -1,7 +1,7 @@
 # ==============================================================================
 # Knowsee Platform Unified Makefile
 # ============================================================================== 
-# Combines ADK agent workflows, frontend tooling, and Terraform automation.
+# Combines LangGraph agent workflows, frontend tooling, and Terraform automation.
 # ==============================================================================
 
 SHELL := /bin/bash
@@ -13,7 +13,6 @@ ENV_COMPOSE = set -a && source .env && $(LOCAL_COMPOSE)
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
-PLAYGROUND_PORT ?= 8501
 BACKEND_HOST ?= localhost
 BACKEND_PORT ?= 8000
 GCP_REGION := europe-west2
@@ -53,13 +52,12 @@ endef
 
 .PHONY: \
 	help install upgrade outdated \
-	playground local-backend data-ingestion \
-	docker-auth docker-build-backend docker-build-frontend docker-push-backend docker-push-frontend \
-	deploy-backend deploy-frontend build-backend build-frontend build-all \
+	local-backend data-ingestion \
+	docker-auth deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
-	local local-down local-logs local-logs-backend local-logs-frontend local-status local-restart \
+	local local-down local-logs local-status \
 	drift \
-	frontend frontend-down frontend-clean frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-test-unit frontend-db-psql frontend-db-query \
+	frontend frontend-down frontend-clean create-user frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-psql frontend-db-query \
 	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
 	fmt validate clean \
 	gcp-switch gcp-status gcp-setup gcp-login \
@@ -77,7 +75,6 @@ help:
 	@printf "  make install           Install uv deps + frontend packages\n"
 	@printf "  make upgrade           Upgrade all dependencies to latest compatible versions\n"
 	@printf "  make outdated          Check for outdated dependencies without upgrading\n"
-	@printf "  make playground        Launch ADK Streamlit playground (:$(PLAYGROUND_PORT))\n"
 	@printf "  make local-backend     Run FastAPI backend only (:$(BACKEND_PORT))\n"
 	@printf "  make local             Start full local stack (backend + frontend)\n"
 	@printf "  make local-down        Stop local stack\n"
@@ -87,13 +84,13 @@ help:
 	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
 	@printf "  make frontend-down         Stop frontend database\n"
 	@printf "  make frontend-clean        Stop database and remove all data\n"
+	@printf "  make create-user           Create a new user (requires backend running)\n"
 	@printf "  make frontend-install      Install frontend dependencies\n"
 	@printf "  make frontend-build        Build frontend for production\n"
 	@printf "  make frontend-db-psql      Open PostgreSQL CLI for database\n"
 	@printf "  make frontend-db-query     Show database summary and recent data\n"
 	@printf "  make frontend-lint         Lint frontend code\n"
 	@printf "  make frontend-test         Run frontend unit tests\n"
-	@printf "  make frontend-test-unit    Run frontend unit tests\n"
 	@printf "\n"
 	@printf "Docker Build and Deploy (requires ENV=dev|staging|prod):\n"
 	@printf "  make build-backend ENV=<env>     Build and push backend image\n"
@@ -148,72 +145,18 @@ install:
 
 upgrade:
 	$(call PRINT_HEADER,Upgrading Dependencies)
-	@printf "  Checking for uncommitted changes...\n"
-	@if ! git diff-index --quiet HEAD -- 2>/dev/null; then \
-		printf "\n  ⚠️  Warning: You have uncommitted changes.\n"; \
-		printf "  Consider committing or stashing before upgrading.\n\n"; \
-	else \
-		printf "  ✅ Working tree is clean\n\n"; \
-	fi
-	@printf "  Creating backup of lock files...\n"
-	@cp uv.lock uv.lock.backup 2>/dev/null || true
-	@cp $(FRONTEND_DIR)/pnpm-lock.yaml $(FRONTEND_DIR)/pnpm-lock.yaml.backup 2>/dev/null || true
-	@printf "  ✅ Backups created: uv.lock.backup, pnpm-lock.yaml.backup\n\n"
-	@printf "  Checking outdated backend packages...\n"
-	@uv pip list --outdated 2>/dev/null | head -20 || printf "  (No outdated packages detected)\n"
-	@printf "\n"
-	$(SEPARATOR)
-	@printf "  Upgrading backend Python dependencies...\n\n"
-	@uv lock --upgrade
-	@printf "\n  Installing upgraded backend packages...\n\n"
-	@uv sync
-	@printf "\n"
-	$(SEPARATOR)
-	@printf "  Upgrading frontend packages...\n\n"
+	@printf "  Backend (uv lock --upgrade)...\n"
+	@uv lock --upgrade && uv sync
+	@printf "\n  Frontend (pnpm update)...\n"
 	$(call PNPM,update)
-	@printf "\n  Running security audit...\n\n"
-	@cd $(FRONTEND_DIR) && pnpm audit || printf "\n  Security issues found - review above\n"
-	@printf "\n"
 	$(SEPARATOR)
-	@printf "  Upgrade Summary:\n\n"
-	@printf "  Backend Python packages:\n"
-	@if [ -f uv.lock.backup ]; then \
-		python3 -c 'import re; \
-		old = open("uv.lock.backup").read(); \
-		new = open("uv.lock").read(); \
-		old_pkgs = {m.group(1): m.group(2) for m in re.finditer(r"name = \"([^\"]+)\".*?version = \"([^\"]+)\"", old, re.DOTALL)}; \
-		new_pkgs = {m.group(1): m.group(2) for m in re.finditer(r"name = \"([^\"]+)\".*?version = \"([^\"]+)\"", new, re.DOTALL)}; \
-		changes = [(k, old_pkgs.get(k, "new"), v) for k, v in new_pkgs.items() if old_pkgs.get(k) != v]; \
-		for pkg, old_v, new_v in sorted(changes)[:15]: \
-			print(f"    {pkg}: {old_v} → {new_v}")' 2>/dev/null || printf "    No version changes detected\n"; \
-	else \
-		printf "    No backup found\n"; \
-	fi
-	@printf "\n  Frontend packages:\n"
-	@printf "    Run 'git diff $(FRONTEND_DIR)/pnpm-lock.yaml' to see changes\n"
-	@printf "\n"
+	@printf "  Done. Review: git diff uv.lock $(FRONTEND_DIR)/pnpm-lock.yaml\n"
+	@printf "  Then run: make check\n"
 	$(SEPARATOR)
-	@printf "  ✅ All dependencies upgraded successfully!\n"
-	@printf "\n  Next steps:\n"
-	@printf "    • Review changes: git diff uv.lock $(FRONTEND_DIR)/pnpm-lock.yaml\n"
-	@printf "    • Run tests: make check\n"
-	@printf "    • Rollback if needed: mv uv.lock.backup uv.lock && mv $(FRONTEND_DIR)/pnpm-lock.yaml.backup $(FRONTEND_DIR)/pnpm-lock.yaml\n"
-	$(SEPARATOR)
-	@printf "\n"
 
 outdated:
-	$(call PRINT_HEADER,Checking Outdated Dependencies)
-	@printf "  Backend (Python):\n\n"
-	@uv pip list --outdated 2>/dev/null || printf "  ✅ All packages are up to date\n"
-	@printf "\n"
-	$(SEPARATOR)
-	@printf "  Frontend (pnpm):\n\n"
-	@cd $(FRONTEND_DIR) && pnpm outdated || printf "  ✅ All packages are up to date\n"
-	@printf "\n"
-	$(SEPARATOR)
-	@printf "  To upgrade: make upgrade\n"
-	$(SEPARATOR)
-	@printf "\n"
+	@printf "Backend:\n" && uv pip list --outdated 2>/dev/null || true
+	@printf "\nFrontend:\n" && cd $(FRONTEND_DIR) && pnpm outdated || true
 
 # ==============================================================================
 # GCP Profile Management
@@ -278,16 +221,8 @@ gcp-status:
 	@printf "\n"
 
 # ==============================================================================
-# Backend (ADK agent) workflows
+# Backend (LangGraph) workflows
 # ==============================================================================
-
-playground:
-	$(call PRINT_HEADER,Agent Playground)
-	@printf "  Starting your agent playground...\n"
-	@printf "  IMPORTANT: Select the 'app' folder to interact with your agent.\n"
-	$(SEPARATOR)
-	@printf "\n"
-	uv run adk web . --port $(PLAYGROUND_PORT) --reload_agents
 
 local-backend:
 	uv run uvicorn backend.src.app:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
@@ -317,29 +252,6 @@ SERVICE_PREFIX = $(RESOURCE_PREFIX)-$(ENV)
 
 docker-auth:
 	@gcloud auth configure-docker $(GCP_REGION)-docker.pkg.dev --quiet
-
-docker-build-backend:
-	$(call CHECK_ENV,docker-build-backend)
-	$(call PRINT_HEADER,Building Backend Image ($(ENV)))
-	docker build --platform linux/amd64 -t $(REGISTRY_URL)/backend:latest \
-		--build-arg COMMIT_SHA=$(shell git rev-parse HEAD) \
-		--build-arg AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0') \
-		.
-
-docker-build-frontend:
-	$(call CHECK_ENV,docker-build-frontend)
-	$(call PRINT_HEADER,Building Frontend Image ($(ENV)))
-	docker build --platform linux/amd64 -t $(REGISTRY_URL)/frontend:latest ./frontend
-
-docker-push-backend: docker-auth
-	$(call CHECK_ENV,docker-push-backend)
-	$(call PRINT_HEADER,Pushing Backend Image ($(ENV)))
-	docker push $(REGISTRY_URL)/backend:latest
-
-docker-push-frontend: docker-auth
-	$(call CHECK_ENV,docker-push-frontend)
-	$(call PRINT_HEADER,Pushing Frontend Image ($(ENV)))
-	docker push $(REGISTRY_URL)/frontend:latest
 
 deploy-backend:
 	$(call CHECK_ENV,deploy-backend)
@@ -393,8 +305,21 @@ deploy-frontend:
 	printf "\n"
 
 # Full build and deploy workflows
-build-backend: docker-build-backend docker-push-backend
-build-frontend: docker-build-frontend docker-push-frontend
+build-backend: docker-auth
+	$(call CHECK_ENV,build-backend)
+	$(call PRINT_HEADER,Building Backend Image ($(ENV)))
+	@docker build --platform linux/amd64 -t $(REGISTRY_URL)/backend:latest \
+		--build-arg COMMIT_SHA=$(shell git rev-parse HEAD) \
+		--build-arg AGENT_VERSION=$(shell awk -F'"' '/^version = / {print $$2}' pyproject.toml || echo '0.0.0') \
+		.
+	@docker push $(REGISTRY_URL)/backend:latest
+
+build-frontend: docker-auth
+	$(call CHECK_ENV,build-frontend)
+	$(call PRINT_HEADER,Building Frontend Image ($(ENV)))
+	@docker build --platform linux/amd64 -t $(REGISTRY_URL)/frontend:latest ./frontend
+	@docker push $(REGISTRY_URL)/frontend:latest
+
 build-all: build-backend build-frontend
 
 release-backend: build-backend deploy-backend
@@ -425,11 +350,9 @@ local:
 	@printf "    Backend         http://localhost:8000\n"
 	@printf "\n"
 	@printf "  Commands:\n"
-	@printf "    make local-logs            Stream all logs\n"
-	@printf "    make local-logs-backend    Stream backend logs\n"
-	@printf "    make local-logs-frontend   Stream frontend logs\n"
-	@printf "    make local-status          Show service status\n"
-	@printf "    make local-down            Stop all services\n"
+	@printf "    make local-logs     Stream logs (or: docker compose logs -f <service>)\n"
+	@printf "    make local-status   Show service status\n"
+	@printf "    make local-down     Stop all services\n"
 	@printf "\n"
 	@printf "  Waiting for services...\n"
 	@sleep 5
@@ -445,17 +368,8 @@ local-down:
 local-logs:
 	@$(LOCAL_COMPOSE) logs -f
 
-local-logs-backend:
-	@$(LOCAL_COMPOSE) logs -f sagent-backend
-
-local-logs-frontend:
-	@$(LOCAL_COMPOSE) logs -f sagent-frontend
-
 local-status:
 	@$(LOCAL_COMPOSE) ps
-
-local-restart:
-	@$(ENV_COMPOSE) restart
 
 # ==============================================================================
 # Drift Check
@@ -473,23 +387,38 @@ drift:
 # ==============================================================================
 
 frontend:
+	@test -d $(FRONTEND_DIR)/node_modules || { \
+		printf "\n  Dependencies not installed. Running 'make install'...\n\n"; \
+		$(MAKE) install; \
+	}
 	$(call PRINT_HEADER,Frontend Development)
 	@printf "  Setting up PostgreSQL database...\n\n"
 	@cd $(FRONTEND_DIR) && bash scripts/setup-db.sh
 	@printf "\n"
 	$(SEPARATOR)
+	@printf "  Running database migrations...\n\n"
+	@POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/chatbot \
+		uv run alembic -c backend/alembic.ini upgrade head
+	@printf "\n"
+	$(SEPARATOR)
 	@printf "  Setting up test user...\n\n"
 	@USER_COUNT=$$(docker exec knowsee-frontend-db psql -U postgres -d chatbot -tAc 'SELECT COUNT(*) FROM "User"' 2>/dev/null || echo "0"); \
 	if [ "$$USER_COUNT" -eq 0 ]; then \
-		read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
-		USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
-		read -sp "  Enter password (default: password): " USER_PASSWORD; \
-		USER_PASSWORD=$${USER_PASSWORD:-password}; \
-		printf "\n"; \
-		cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
-		printf "\n  Test user created:\n"; \
-		printf "    Email:    $$USER_EMAIL\n"; \
-		printf "    Password: $$USER_PASSWORD\n"; \
+		if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then \
+			printf "  Backend not running. To create a user later:\n"; \
+			printf "    1. Run 'make local-backend' in another terminal\n"; \
+			printf "    2. Run 'make create-user'\n\n"; \
+		else \
+			read -p "  Enter email (default: test@example.com): " USER_EMAIL; \
+			USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+			read -sp "  Enter password (default: password): " USER_PASSWORD; \
+			USER_PASSWORD=$${USER_PASSWORD:-password}; \
+			printf "\n"; \
+			cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+			printf "\n  Test user created:\n"; \
+			printf "    Email:    $$USER_EMAIL\n"; \
+			printf "    Password: $$USER_PASSWORD\n"; \
+		fi; \
 	else \
 		printf "  Users already exist, skipping user creation\n"; \
 	fi
@@ -516,6 +445,19 @@ frontend-clean:
 	@cd $(FRONTEND_DIR) && docker compose -f docker-compose.local.yml down -v
 	@printf "Database and data removed\n"
 
+create-user:
+	@if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then \
+		printf "Error: Backend not running. Start it with 'make local-backend'\n"; \
+		exit 1; \
+	fi
+	@read -p "Enter email (default: test@example.com): " USER_EMAIL; \
+	USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+	read -sp "Enter password (default: password): " USER_PASSWORD; \
+	USER_PASSWORD=$${USER_PASSWORD:-password}; \
+	printf "\n"; \
+	cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+	printf "User created: $$USER_EMAIL\n"
+
 frontend-install:
 	@cd $(FRONTEND_DIR) && pnpm install
 
@@ -528,9 +470,7 @@ frontend-typecheck:
 frontend-lint:
 	$(call PNPM,lint)
 
-frontend-test: frontend-test-unit
-
-frontend-test-unit:
+frontend-test:
 	$(call PNPM,test:unit)
 
 frontend-db-psql:
@@ -679,10 +619,23 @@ validate:
 	done
 
 clean:
+	$(call PRINT_HEADER,Clean All)
+	@printf "  Cleaning Python virtual environment...\n"
+	@rm -rf .venv 2>/dev/null || true
+	@printf "  Cleaning frontend node_modules...\n"
+	@rm -rf $(FRONTEND_DIR)/node_modules 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/.next 2>/dev/null || true
+	@printf "  Cleaning Python cache...\n"
+	@find . -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".mypy_cache" -prune -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@printf "  Cleaning Terraform cache...\n"
 	@find $(TERRAFORM_ROOT) -type d -name ".terraform" -prune -exec rm -rf {} + 2>/dev/null || true
 	@find $(TERRAFORM_ROOT) -type f -name ".terraform.lock.hcl" -delete 2>/dev/null || true
+	@printf "  Cleaning backup files...\n"
 	@rm -f uv.lock.backup $(FRONTEND_DIR)/package-lock.json.backup 2>/dev/null || true
-	@printf "Cleaned Terraform cache and backup files\n"
+	@printf "\n  Clean complete. Run 'make install' to reinstall dependencies.\n"
 
 define TERRAFORM_TARGETS
 $(1)-init:
