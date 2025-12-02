@@ -1,7 +1,7 @@
 #!/bin/sh
-# Pre-commit hook: format staged files before commit
+# Pre-commit hook: format staged files and check documentation sync
 
-echo "Running pre-commit formatting..."
+echo "Running pre-commit checks..."
 
 # Format backend
 uv run ruff format . --quiet
@@ -13,5 +13,19 @@ cd ..
 
 # Stage any formatting changes
 git add -u
+
+# Documentation sync check (warn only)
+CODE_PATTERNS="docker-compose\.yml|Makefile|pyproject\.toml|package\.json"
+DOC_FILES="README\.md|docs/|CLAUDE\.md"
+
+if git diff --cached --name-only | grep -qE "$CODE_PATTERNS"; then
+  if ! git diff --cached --name-only | grep -qE "$DOC_FILES"; then
+    echo ""
+    echo "⚠️  Config files modified but no documentation updated."
+    echo "   Changed: $(git diff --cached --name-only | grep -E "$CODE_PATTERNS" | tr '\n' ' ')"
+    echo "   Consider checking if README.md or docs/ need updates."
+    echo ""
+  fi
+fi
 
 echo "Pre-commit complete."
