@@ -29,13 +29,8 @@ Browser → Next.js (:3000) → FastAPI (:8000) → LangGraph + Vertex AI (MaaS,
 - `lib/db/` - Drizzle queries mirroring backend SQLAlchemy
 
 ## Tech Stack
-| Layer | Technologies |
-|-------|--------------|
-| Backend | FastAPI, LangGraph, LangChain, Vertex AI, SQLAlchemy 2.0, asyncpg |
-| Frontend | Next.js 15, Vercel AI SDK 5, Auth.js, shadcn/ui, Tailwind CSS 4 |
-| Database | PostgreSQL 16 with Alembic migrations |
-| Infra | GCP Cloud Run, Artifact Registry, Terraform |
-| Tooling | uv (Python), pnpm (Node), Ruff, Biome, Docker |
+
+See README.md for the full tech stack.
 
 ## Development Commands
 
