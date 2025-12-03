@@ -1,15 +1,15 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
-import { motion } from "framer-motion";
-import { memo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { memo, useEffect, useState } from "react";
 import type { Vote } from "@/lib/db/types";
+import { THINKING_VERBS } from "@/lib/thinking-verbs";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
-import { SparklesIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
@@ -56,11 +56,7 @@ const PurePreviewMessage = ({
           "justify-start": message.role === "assistant",
         })}
       >
-        {message.role === "assistant" && (
-          <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-            <SparklesIcon size={14} />
-          </div>
-        )}
+        {/* iMessage-style: no avatar for assistant, clean separation */}
 
         <div
           className={cn("flex flex-col", {
@@ -160,6 +156,21 @@ const PurePreviewMessage = ({
             return null;
           })}
 
+          {/* Show cycling verbs when loading with no text, shimmer when streaming with text */}
+          {isLoading &&
+            message.role === "assistant" &&
+            !message.parts?.some(
+              (p) => p.type === "text" && p.text?.trim()
+            ) && <StreamingVerbs />}
+          {isLoading &&
+            message.role === "assistant" &&
+            message.parts?.some((p) => p.type === "text" && p.text?.trim()) && (
+              <div className="space-y-2">
+                <div className="shimmer h-4 w-3/4 rounded" />
+                <div className="shimmer h-4 w-1/2 rounded" />
+              </div>
+            )}
+
           {!isReadonly && (
             <MessageActions
               chatId={chatId}
@@ -195,10 +206,57 @@ export const PreviewMessage = memo(
       return false;
     }
 
-    return false;
+    return true;
   }
 );
 
+/**
+ * Animated verb cycling component with glow effect.
+ * Used both in ThinkingMessage and StreamingVerbs.
+ */
+const AnimatedVerb = () => {
+  const [currentVerb, setCurrentVerb] = useState(
+    () => THINKING_VERBS[Math.floor(Math.random() * THINKING_VERBS.length)]
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVerb((prev) => {
+        let next: (typeof THINKING_VERBS)[number];
+        do {
+          next =
+            THINKING_VERBS[Math.floor(Math.random() * THINKING_VERBS.length)];
+        } while (next === prev && THINKING_VERBS.length > 1);
+        return next;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span
+        animate={{ opacity: 1, y: 0 }}
+        className="thinking-glow text-muted-foreground text-sm"
+        exit={{ opacity: 0, y: -5, transition: { duration: 0.15 } }}
+        initial={{ opacity: 0, y: 5 }}
+        key={currentVerb}
+        transition={{ duration: 0.2 }}
+      >
+        {currentVerb}...
+      </motion.span>
+    </AnimatePresence>
+  );
+};
+
+/**
+ * Cycling verbs shown inside PreviewMessage when streaming but no text yet.
+ */
+const StreamingVerbs = () => <AnimatedVerb />;
+
+/**
+ * Standalone thinking message shown before streaming starts (submitted status).
+ */
 export const ThinkingMessage = () => {
   const role = "assistant";
 
@@ -208,18 +266,12 @@ export const ThinkingMessage = () => {
       className="group/message w-full"
       data-role={role}
       data-testid="message-assistant-loading"
-      exit={{ opacity: 0, transition: { duration: 0.5 } }}
+      exit={{ opacity: 0, transition: { duration: 0.3 } }}
       initial={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="flex items-start justify-start gap-3">
-        <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
-          <SparklesIcon size={14} />
-        </div>
-
-        <div className="flex w-full flex-col gap-2 md:gap-4">
-          <div className="p-0 text-muted-foreground text-sm">Thinking...</div>
-        </div>
+      <div className="flex items-start justify-start">
+        <AnimatedVerb />
       </div>
     </motion.div>
   );

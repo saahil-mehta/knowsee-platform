@@ -3,16 +3,24 @@
 
 echo "Running pre-commit checks..."
 
-# Format backend
-uv run ruff format . --quiet
-uv run ruff check --fix . --quiet 2>/dev/null || true
+# Get list of staged files BEFORE formatting
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
 
-# Format frontend
-cd frontend && pnpm exec ultracite fix --quiet 2>/dev/null || true
-cd ..
+# Format only staged Python files
+if [ -n "$STAGED_PY" ]; then
+  echo "$STAGED_PY" | xargs uv run ruff format --quiet 2>/dev/null || true
+  echo "$STAGED_PY" | xargs uv run ruff check --fix --quiet 2>/dev/null || true
+  # Re-stage only the files that were originally staged
+  echo "$STAGED_PY" | xargs git add
+fi
 
-# Stage any formatting changes
-git add -u
+# Format only staged TypeScript/JavaScript files
+if [ -n "$STAGED_TS" ]; then
+  (cd frontend && echo "$STAGED_TS" | sed 's|^frontend/||' | xargs pnpm exec ultracite fix --quiet 2>/dev/null || true)
+  # Re-stage only the files that were originally staged
+  echo "$STAGED_TS" | xargs git add
+fi
 
 # Documentation sync check (warn only)
 CODE_PATTERNS="docker-compose\.yml|Makefile|pyproject\.toml|package\.json"
