@@ -92,7 +92,8 @@ function PureMessages({
             />
           ))}
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
+            {/* Only show thinking during submitted - once streaming starts, PreviewMessage handles it */}
             {status === "submitted" && <ThinkingMessage key="thinking" />}
           </AnimatePresence>
 
@@ -139,5 +140,5 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
     return false;
   }
 
-  return false;
+  return true;
 });
