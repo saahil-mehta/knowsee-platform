@@ -63,9 +63,7 @@ export const {
       },
     },
     csrfToken: {
-      name: useSecureCookies
-        ? "__Host-authjs.csrf-token"
-        : "authjs.csrf-token",
+      name: useSecureCookies ? "__Host-authjs.csrf-token" : "authjs.csrf-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
