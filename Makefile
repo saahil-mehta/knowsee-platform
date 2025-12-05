@@ -54,7 +54,7 @@ endef
 	local-backend data-ingestion \
 	docker-auth deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
-	local local-down local-clean local-logs local-status local-db-psql local-db-query local-create-user \
+	local local-down local-clean local-logs local-status local-db-psql local-db-query local-create-user docker-build docker-test \
 	drift \
 	frontend frontend-down frontend-clean create-user frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-psql frontend-db-query \
 	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
@@ -82,6 +82,8 @@ help:
 	@printf "  make local-db-psql     Open PostgreSQL CLI\n"
 	@printf "  make local-db-query    Show database summary and users\n"
 	@printf "  make local-clean       Stop and remove all data\n"
+	@printf "  make docker-build      Build Docker images (CI validation)\n"
+	@printf "  make docker-test       Build and run smoke tests\n"
 	@printf "\n"
 	@printf "Frontend (Next.js Chatbot):\n"
 	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
@@ -419,6 +421,36 @@ local-create-user:
 	printf "\n"; \
 	cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
 	printf "User created: $$USER_EMAIL\n"
+
+# Docker build validation (for CI)
+docker-build:
+	$(call PRINT_HEADER,Docker Build Validation)
+	@printf "  Building backend image...\n"
+	@docker build -f Dockerfile -t knowsee-backend:test .
+	@printf "\n  Building frontend image...\n"
+	@docker build -f $(FRONTEND_DIR)/Dockerfile -t knowsee-frontend:test $(FRONTEND_DIR)
+	$(SEPARATOR)
+	@printf "  Both images built successfully.\n"
+	$(SEPARATOR)
+
+# Docker smoke test (builds + health checks)
+docker-test:
+	$(call PRINT_HEADER,Docker Smoke Test)
+	@printf "  Building and starting services...\n\n"
+	@$(LOCAL_COMPOSE) up -d --build
+	@printf "\n  Waiting for services to be healthy (30s)...\n"
+	@sleep 30
+	@printf "\n  Checking backend health...\n"
+	@docker exec knowsee-backend curl -sf http://localhost:8000/health || ($(LOCAL_COMPOSE) logs && $(LOCAL_COMPOSE) down && exit 1)
+	@printf "  Backend: OK\n"
+	@printf "\n  Checking frontend health...\n"
+	@docker exec knowsee-frontend wget -q --spider http://localhost:3000/ || ($(LOCAL_COMPOSE) logs && $(LOCAL_COMPOSE) down && exit 1)
+	@printf "  Frontend: OK\n"
+	@printf "\n  Stopping services...\n"
+	@$(LOCAL_COMPOSE) down
+	$(SEPARATOR)
+	@printf "  Smoke test passed!\n"
+	$(SEPARATOR)
 
 # ==============================================================================
 # Drift Check
