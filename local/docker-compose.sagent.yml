@@ -1,0 +1,106 @@
+# ==============================================================================
+# Knowsee Platform - Local Development Docker Compose
+# ==============================================================================
+# Full stack: Frontend (Next.js) + Backend (FastAPI) + PostgreSQL
+# Usage: make local (or: docker compose -f local/docker-compose.sagent.yml up -d)
+# ==============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: knowsee-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chatbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - knowsee-network
+
+  # ---------------------------------------------------------------------------
+  # Backend (FastAPI + LangGraph)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: knowsee-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Database connection (internal docker network)
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/chatbot
+      # GCP settings (from .env)
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-europe-west2}
+    volumes:
+      # Mount GCP Application Default Credentials for Vertex AI
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - knowsee-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: knowsee-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Auth.js configuration
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://localhost:3000
+      # AUTH_SECURE_COOKIES is intentionally NOT set (defaults to non-secure for HTTP)
+      # Set to "true" in production with HTTPS
+      # Database connection (internal docker network)
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/chatbot
+      # Backend connection (internal docker network)
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - knowsee-network
+
+networks:
+  knowsee-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: knowsee-local-db-data

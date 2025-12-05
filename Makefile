@@ -8,8 +8,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 FRONTEND_DIR := frontend
-LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml
-ENV_COMPOSE = set -a && source .env && $(LOCAL_COMPOSE)
+LOCAL_COMPOSE := docker compose -f local/docker-compose.sagent.yml --env-file .env
 TERRAFORM_ROOT := terraform
 TERRAFORM_ENVS := cicd dev staging prod
 TF_VARS_NAME := terraform.tfvars
@@ -55,7 +54,7 @@ endef
 	local-backend data-ingestion \
 	docker-auth deploy-backend deploy-frontend build-backend build-frontend build-all \
 	release-backend release-frontend release-all \
-	local local-down local-logs local-status \
+	local local-down local-clean local-logs local-status local-db-psql local-db-query local-create-user \
 	drift \
 	frontend frontend-down frontend-clean create-user frontend-install frontend-build frontend-typecheck frontend-lint frontend-test frontend-db-psql frontend-db-query \
 	backend-test backend-test-unit backend-test-int backend-test-cov backend-test-full backend-lint backend-health test-db-up test-db-down test lint check \
@@ -79,6 +78,10 @@ help:
 	@printf "  make local             Start full local stack (backend + frontend)\n"
 	@printf "  make local-down        Stop local stack\n"
 	@printf "  make local-logs        Stream local stack logs\n"
+	@printf "  make local-create-user Create a test user\n"
+	@printf "  make local-db-psql     Open PostgreSQL CLI\n"
+	@printf "  make local-db-query    Show database summary and users\n"
+	@printf "  make local-clean       Stop and remove all data\n"
 	@printf "\n"
 	@printf "Frontend (Next.js Chatbot):\n"
 	@printf "  make frontend              Start frontend with DB setup and migrations (:3000)\n"
@@ -342,34 +345,80 @@ data-ingestion:
 # ==============================================================================
 
 local:
-	$(call PRINT_HEADER,Local Stack (Backend + Frontend))
-	@$(ENV_COMPOSE) up -d --build
+	$(call PRINT_HEADER,Local Docker Stack)
+	@printf "  Building and starting services...\n\n"
+	@$(LOCAL_COMPOSE) up -d --build
 	@printf "\n"
+	@printf "  Waiting for services to be healthy...\n"
+	@sleep 10
+	@$(LOCAL_COMPOSE) ps
+	@printf "\n"
+	$(SEPARATOR)
 	@printf "  Services:\n"
-	@printf "    Frontend  http://localhost:3000\n"
+	@printf "    Frontend        http://localhost:3000\n"
 	@printf "    Backend         http://localhost:8000\n"
+	@printf "    PostgreSQL      localhost:5432\n"
 	@printf "\n"
 	@printf "  Commands:\n"
-	@printf "    make local-logs     Stream logs (or: docker compose logs -f <service>)\n"
-	@printf "    make local-status   Show service status\n"
-	@printf "    make local-down     Stop all services\n"
-	@printf "\n"
-	@printf "  Waiting for services...\n"
-	@sleep 5
-	@$(LOCAL_COMPOSE) ps
-	$(SEPARATOR)
-	@printf "  Stack ready.\n"
+	@printf "    make local-logs        Stream all logs\n"
+	@printf "    make local-status      Show service status\n"
+	@printf "    make local-create-user Create a test user\n"
+	@printf "    make local-db-psql     Open PostgreSQL CLI\n"
+	@printf "    make local-down        Stop all services\n"
+	@printf "    make local-clean       Stop and remove all data\n"
 	$(SEPARATOR)
 	@printf "\n"
 
 local-down:
-	@$(ENV_COMPOSE) down
+	@$(LOCAL_COMPOSE) down
+
+local-clean:
+	@printf "Stopping services and removing all data...\n"
+	@$(LOCAL_COMPOSE) down -v
+	@printf "Done. All containers and volumes removed.\n"
 
 local-logs:
 	@$(LOCAL_COMPOSE) logs -f
 
 local-status:
 	@$(LOCAL_COMPOSE) ps
+
+local-db-psql:
+	@docker exec -it knowsee-db psql -U postgres -d chatbot
+
+local-db-query:
+	@if ! docker ps --format '{{.Names}}' | grep -q '^knowsee-db$$'; then \
+		printf "\n  Database not running. Start it with: make local\n\n"; \
+		exit 1; \
+	fi
+	@printf "\n  Database Summary\n"
+	@printf "$(SEPARATOR_LINE)\n\n"
+	@docker exec knowsee-db psql -U postgres -d chatbot -c "\
+		SELECT 'User' as table_name, COUNT(*) as rows FROM \"User\" \
+		UNION ALL SELECT 'Chat', COUNT(*) FROM \"Chat\" \
+		UNION ALL SELECT 'Message_v2', COUNT(*) FROM \"Message_v2\" \
+		UNION ALL SELECT 'Document', COUNT(*) FROM \"Document\" \
+		UNION ALL SELECT 'Vote_v2', COUNT(*) FROM \"Vote_v2\" \
+		UNION ALL SELECT 'Suggestion', COUNT(*) FROM \"Suggestion\" \
+		UNION ALL SELECT 'Stream', COUNT(*) FROM \"Stream\" \
+		ORDER BY table_name;"
+	@printf "\n  Users\n"
+	@printf "$(SEPARATOR_LINE)\n"
+	@docker exec knowsee-db psql -U postgres -d chatbot -c "\
+		SELECT id, email FROM \"User\" LIMIT 10;"
+
+local-create-user:
+	@if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then \
+		printf "Error: Backend not running. Start it with 'make local'\n"; \
+		exit 1; \
+	fi
+	@read -p "Enter email (default: test@example.com): " USER_EMAIL; \
+	USER_EMAIL=$${USER_EMAIL:-test@example.com}; \
+	read -sp "Enter password (default: password): " USER_PASSWORD; \
+	USER_PASSWORD=$${USER_PASSWORD:-password}; \
+	printf "\n"; \
+	cd $(FRONTEND_DIR) && npx tsx scripts/create-user.ts "$$USER_EMAIL" "$$USER_PASSWORD"; \
+	printf "User created: $$USER_EMAIL\n"
 
 # ==============================================================================
 # Drift Check
