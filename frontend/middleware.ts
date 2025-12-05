@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { isDevelopmentEnvironment } from "./lib/constants";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,10 +16,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // NOTE: Can't use NODE_ENV because Next.js inlines it at build time!
+  const useSecureCookie = process.env.AUTH_SECURE_COOKIES === "true";
+
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
+    secureCookie: useSecureCookie,
   });
 
   // Allow unauthenticated access to login and register pages
