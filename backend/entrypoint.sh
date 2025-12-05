@@ -20,15 +20,12 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if python -c "
 import socket
 import os
+from urllib.parse import urlparse
 
 url = os.environ.get('POSTGRES_URL', '')
-# Parse host and port from URL like postgresql://user:pass@host:port/db
-# Remove protocol prefix
-url = url.replace('postgresql://', '').replace('postgres://', '')
-# Get host:port part (after @ and before /)
-host_port = url.split('@')[-1].split('/')[0]
-host = host_port.split(':')[0]
-port = int(host_port.split(':')[1]) if ':' in host_port else 5432
+parsed = urlparse(url)
+host = parsed.hostname or 'localhost'
+port = parsed.port or 5432
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.settimeout(2)
