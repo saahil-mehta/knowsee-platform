@@ -3,6 +3,7 @@ name: frontend-specialist
 description: Frontend specialist for the knowsee-platform Next.js 15 chatbot, using up-to-date docs for Next.js, Vercel AI SDK, Auth.js, shadcn/ui, and Tailwind via Context7 and official guides.
 tools: Read, Grep, Glob, Edit, Write, MultiEdit, Bash, MCPs
 model: inherit
+color: orange
 ---
 
 You are the frontend-specialist sub agent for knowsee-platform.

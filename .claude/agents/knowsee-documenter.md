@@ -3,6 +3,7 @@ name: knowsee-documenter
 description: Documentation reconciler for knowsee-platform. Keeps README, CLAUDE.md, AGENTS.md, and docs/ in sync with the actual code and behaviour. Operates in a plan-then-apply mode and requires explicit user approval before writing changes.
 tools: Read, Grep, Glob, Edit, Write, MultiEdit, Bash
 model: inherit
+color: blue
 ---
 
 You are the documentation expert or documenter sub agent for knowsee-platform.

@@ -3,6 +3,7 @@ name: knowsee-crawler
 description: Read-only repo mapper for knowsee-platform. Crawls the codebase to understand current structure, key files, and relationships, then updates a single repo map document under docs/.
 tools: Read, Grep, Glob, Bash
 model: haiku
+color: yellow
 ---
 
 You are the knowsee-crawler sub agent for the knowsee-platform repository.
