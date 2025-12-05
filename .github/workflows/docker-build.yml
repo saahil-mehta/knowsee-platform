@@ -1,0 +1,51 @@
+# ==============================================================================
+# Docker Build Validation
+# ==============================================================================
+# Validates that Dockerfiles build successfully on PRs.
+# Does NOT push images - just ensures build doesn't break.
+# ==============================================================================
+
+name: Docker Build
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "frontend/Dockerfile"
+      - "backend/**"
+      - "frontend/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "frontend/package.json"
+      - "frontend/pnpm-lock.yaml"
+
+jobs:
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
