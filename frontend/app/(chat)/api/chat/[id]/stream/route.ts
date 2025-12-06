@@ -8,8 +8,8 @@ import {
 } from "@/lib/db/queries";
 import type { Chat } from "@/lib/db/types";
 import { ChatSDKError } from "@/lib/errors";
+import { getStreamContext } from "@/lib/stream-context";
 import type { ChatMessage } from "@/lib/types";
-import { getStreamContext } from "../../route";
 
 export async function GET(
   _: Request,

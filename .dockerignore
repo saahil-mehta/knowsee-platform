@@ -1,0 +1,66 @@
+# ==============================================================================
+# Docker Ignore - Backend
+# ==============================================================================
+
+# Git
+.git
+.gitignore
+.gitmessage.txt
+.githooks
+
+# Python virtual environments
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation (not needed in container)
+*.md
+docs/
+notebooks/
+
+# Frontend (built separately)
+frontend/
+
+# Terraform (infrastructure, not runtime)
+terraform/
+
+# Local development
+local/
+.env
+.env.*
+!.env.example
+
+# Tests (not needed in production image)
+tests/
+
+# Build artifacts
+*.egg-info
+dist/
+build/
+
+# Misc
+.DS_Store
+*.log
+.scratchpad.txt
+
+# Node (root level package.json is for tooling only)
+node_modules/
+package.json
+pnpm-lock.yaml
+
+# Claude
+.claude/
+CLAUDE.md
+AGENTS.md

@@ -26,6 +26,11 @@ declare module "next-auth/jwt" {
   }
 }
 
+// Determine if we should use secure cookies
+// NOTE: Can't use NODE_ENV here because Next.js inlines it at build time!
+// Use a custom env var that's evaluated at runtime
+const useSecureCookies = process.env.AUTH_SECURE_COOKIES === "true";
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -33,6 +38,40 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
+  // Explicitly configure cookies for HTTP in development/Docker
+  cookies: {
+    sessionToken: {
+      name: useSecureCookies
+        ? "__Secure-authjs.session-token"
+        : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    callbackUrl: {
+      name: useSecureCookies
+        ? "__Secure-authjs.callback-url"
+        : "authjs.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    csrfToken: {
+      name: useSecureCookies ? "__Host-authjs.csrf-token" : "authjs.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+  },
   providers: [
     Credentials({
       credentials: {},

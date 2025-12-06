@@ -70,8 +70,13 @@ Use conventional commits (see .gitmessage.txt):
 
 Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert
   - Subject in lowercase, imperative mood
-  - Group commits by theme
   - Never co-author
+
+### Commit Granularity
+  - One logical change per commit (atomic commits)
+  - Separate commits for: features, fixes, refactors, chores
+  - When multiple changes exist, ask user how to group them
+  - Never bundle unrelated changes in a single commit
 
 ## Output Policy
   - UK English spelling
