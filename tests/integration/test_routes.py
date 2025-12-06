@@ -13,6 +13,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.src.app import app
+from backend.src.db.config import get_db
 
 # Skip all tests if test database is not available
 pytestmark = pytest.mark.asyncio
@@ -26,14 +27,14 @@ async def integration_client(test_session):
     database operations use the same session as the test fixtures.
     """
 
-    @asynccontextmanager
-    async def mock_get_session():
+    async def mock_get_db():
         yield test_session
 
-    with patch("backend.src.api.routes.get_session", mock_get_session):
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+    app.dependency_overrides[get_db] = mock_get_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()
 
 
 class TestHealthEndpointsIntegration:

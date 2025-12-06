@@ -61,14 +61,10 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     )
 
 
-@asynccontextmanager
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Provide a transactional scope around a series of operations.
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Dependency for FastAPI routes.
 
-    Usage:
-        async with get_session() as session:
-            result = await session.execute(query)
-            # auto-commits on success, auto-rollbacks on exception
+    Yields a database session that commits on success and rolls back on exception.
     """
     session_factory = get_session_factory()
     async with session_factory() as session:
@@ -78,6 +74,19 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+@asynccontextmanager
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide a transactional scope around a series of operations.
+
+    Usage:
+        async with get_session() as session:
+            result = await session.execute(query)
+            # auto-commits on success, auto-rollbacks on exception
+    """
+    async for session in get_db():
+        yield session
 
 
 async def check_db_health(timeout: float | None = None) -> dict[str, str | bool | float]:

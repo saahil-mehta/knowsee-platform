@@ -1,5 +1,6 @@
 """FastAPI application exposing the LangGraph chatbot."""
 
+import os
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -11,6 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from backend.src.api import router as db_router
 from backend.src.db.config import check_db_health
 from backend.src.graph import chatbot_graph, generate_title
+from backend.src.observability import get_logger
 from backend.src.observability.middleware import setup_observability
 from backend.src.stream import create_streaming_response
 
@@ -20,13 +22,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
+logger = get_logger(__name__)
+
 # Set up observability (logging, metrics, exception handlers)
 setup_observability(app)
 
 # CORS for frontend integration
+origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -182,6 +187,7 @@ async def chat_simple(request: SimpleChatRequest) -> SimpleChatResponse:
         return SimpleChatResponse(response=response_text)
 
     except Exception as e:
+        logger.error(f"Error processing chat request: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}") from e
 
 

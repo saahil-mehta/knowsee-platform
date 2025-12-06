@@ -8,11 +8,12 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.db import queries
-from backend.src.db.config import get_session
+from backend.src.db.config import get_db
 
 router = APIRouter(prefix="/api/db", tags=["database"])
 
@@ -187,26 +188,27 @@ class DeletedCountResponse(BaseModel):
 
 
 @router.get("/users", response_model=list[UserResponse])
-async def get_user(email: str = Query(..., description="User email")):
+async def get_user(
+    email: str = Query(..., description="User email"), session: AsyncSession = Depends(get_db)
+):
     """Get user by email."""
-    async with get_session() as session:
-        users = await queries.get_user(session, email)
-        return users
+    users = await queries.get_user(session, email)
+    return users
 
 
 @router.post("/users", response_model=UserResponse)
-async def create_user(email: str = Query(...), password: str = Query(...)):
+async def create_user(
+    email: str = Query(...), password: str = Query(...), session: AsyncSession = Depends(get_db)
+):
     """Create a new user."""
-    async with get_session() as session:
-        user = await queries.create_user(session, email, password)
-        return user
+    user = await queries.create_user(session, email, password)
+    return user
 
 
 @router.post("/users/guest", response_model=UserResponse)
-async def create_guest_user():
+async def create_guest_user(session: AsyncSession = Depends(get_db)):
     """Create a guest user."""
-    async with get_session() as session:
-        return await queries.create_guest_user(session)
+    return await queries.create_guest_user(session)
 
 
 # ==============================================================================
@@ -215,21 +217,19 @@ async def create_guest_user():
 
 
 @router.post("/chats", response_model=ChatResponse)
-async def save_chat(chat: ChatCreate):
+async def save_chat(chat: ChatCreate, session: AsyncSession = Depends(get_db)):
     """Create a new chat."""
-    async with get_session() as session:
-        result = await queries.save_chat(session, chat.id, chat.userId, chat.title, chat.visibility)
-        return result
+    result = await queries.save_chat(session, chat.id, chat.userId, chat.title, chat.visibility)
+    return result
 
 
 @router.get("/chats/{chat_id}", response_model=ChatResponse | None)
-async def get_chat_by_id(chat_id: UUID):
+async def get_chat_by_id(chat_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get a chat by ID."""
-    async with get_session() as session:
-        chat = await queries.get_chat_by_id(session, chat_id)
-        if not chat:
-            return None
-        return chat
+    chat = await queries.get_chat_by_id(session, chat_id)
+    if not chat:
+        return None
+    return chat
 
 
 @router.get("/chats", response_model=ChatsResponse)
@@ -238,43 +238,43 @@ async def get_chats_by_user_id(
     limit: int = Query(10),
     starting_after: UUID | None = Query(None),
     ending_before: UUID | None = Query(None),
+    session: AsyncSession = Depends(get_db),
 ):
     """Get paginated chats for a user."""
-    async with get_session() as session:
-        result = await queries.get_chats_by_user_id(
-            session, userId, limit, starting_after, ending_before
-        )
-        return result
+    result = await queries.get_chats_by_user_id(
+        session, userId, limit, starting_after, ending_before
+    )
+    return result
 
 
 @router.delete("/chats/{chat_id}", response_model=ChatResponse | None)
-async def delete_chat_by_id(chat_id: UUID):
+async def delete_chat_by_id(chat_id: UUID, session: AsyncSession = Depends(get_db)):
     """Delete a chat and all related data."""
-    async with get_session() as session:
-        return await queries.delete_chat_by_id(session, chat_id)
+    return await queries.delete_chat_by_id(session, chat_id)
 
 
 @router.delete("/chats/user/{user_id}", response_model=DeletedCountResponse)
-async def delete_all_chats_by_user_id(user_id: UUID):
+async def delete_all_chats_by_user_id(user_id: UUID, session: AsyncSession = Depends(get_db)):
     """Delete all chats for a user."""
-    async with get_session() as session:
-        return await queries.delete_all_chats_by_user_id(session, user_id)
+    return await queries.delete_all_chats_by_user_id(session, user_id)
 
 
 @router.patch("/chats/{chat_id}/visibility", response_model=SuccessResponse)
-async def update_chat_visibility(chat_id: UUID, visibility: str = Query(...)):
+async def update_chat_visibility(
+    chat_id: UUID, visibility: str = Query(...), session: AsyncSession = Depends(get_db)
+):
     """Update chat visibility."""
-    async with get_session() as session:
-        await queries.update_chat_visibility_by_id(session, chat_id, visibility)
-        return {"success": True}
+    await queries.update_chat_visibility_by_id(session, chat_id, visibility)
+    return {"success": True}
 
 
 @router.patch("/chats/{chat_id}/context", response_model=SuccessResponse)
-async def update_chat_last_context(chat_id: UUID, context: dict[str, Any]):
+async def update_chat_last_context(
+    chat_id: UUID, context: dict[str, Any], session: AsyncSession = Depends(get_db)
+):
     """Update chat's last context."""
-    async with get_session() as session:
-        await queries.update_chat_last_context_by_id(session, chat_id, context)
-        return {"success": True}
+    await queries.update_chat_last_context_by_id(session, chat_id, context)
+    return {"success": True}
 
 
 # ==============================================================================
@@ -283,40 +283,39 @@ async def update_chat_last_context(chat_id: UUID, context: dict[str, Any]):
 
 
 @router.post("/messages", response_model=list[MessageResponse])
-async def save_messages(messages: list[MessageCreate]):
+async def save_messages(messages: list[MessageCreate], session: AsyncSession = Depends(get_db)):
     """Save multiple messages."""
-    async with get_session() as session:
-        return await queries.save_messages(session, [m.model_dump() for m in messages])
+    return await queries.save_messages(session, [m.model_dump() for m in messages])
 
 
 @router.get("/messages/{chat_id}", response_model=list[MessageResponse])
-async def get_messages_by_chat_id(chat_id: UUID):
+async def get_messages_by_chat_id(chat_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get all messages for a chat."""
-    async with get_session() as session:
-        return await queries.get_messages_by_chat_id(session, chat_id)
+    return await queries.get_messages_by_chat_id(session, chat_id)
 
 
 @router.get("/messages/single/{message_id}", response_model=list[MessageResponse])
-async def get_message_by_id(message_id: UUID):
+async def get_message_by_id(message_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get a message by ID."""
-    async with get_session() as session:
-        return await queries.get_message_by_id(session, message_id)
+    return await queries.get_message_by_id(session, message_id)
 
 
 @router.delete("/messages/{chat_id}", response_model=SuccessResponse)
-async def delete_messages_after_timestamp(chat_id: UUID, timestamp: datetime = Query(...)):
+async def delete_messages_after_timestamp(
+    chat_id: UUID, timestamp: datetime = Query(...), session: AsyncSession = Depends(get_db)
+):
     """Delete messages after a timestamp."""
-    async with get_session() as session:
-        await queries.delete_messages_by_chat_id_after_timestamp(session, chat_id, timestamp)
-        return {"success": True}
+    await queries.delete_messages_by_chat_id_after_timestamp(session, chat_id, timestamp)
+    return {"success": True}
 
 
 @router.get("/messages/count/{user_id}", response_model=CountResponse)
-async def get_message_count(user_id: UUID, hours: int = Query(24)):
+async def get_message_count(
+    user_id: UUID, hours: int = Query(24), session: AsyncSession = Depends(get_db)
+):
     """Get message count for rate limiting."""
-    async with get_session() as session:
-        count = await queries.get_message_count_by_user_id(session, user_id, hours)
-        return {"count": count}
+    count = await queries.get_message_count_by_user_id(session, user_id, hours)
+    return {"count": count}
 
 
 # ==============================================================================
@@ -325,18 +324,16 @@ async def get_message_count(user_id: UUID, hours: int = Query(24)):
 
 
 @router.patch("/votes", response_model=SuccessResponse)
-async def vote_message(vote: VoteRequest):
+async def vote_message(vote: VoteRequest, session: AsyncSession = Depends(get_db)):
     """Vote on a message."""
-    async with get_session() as session:
-        await queries.vote_message(session, vote.chatId, vote.messageId, vote.type)
-        return {"success": True}
+    await queries.vote_message(session, vote.chatId, vote.messageId, vote.type)
+    return {"success": True}
 
 
 @router.get("/votes/{chat_id}", response_model=list[VoteResponse])
-async def get_votes_by_chat_id(chat_id: UUID):
+async def get_votes_by_chat_id(chat_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get all votes for a chat."""
-    async with get_session() as session:
-        return await queries.get_votes_by_chat_id(session, chat_id)
+    return await queries.get_votes_by_chat_id(session, chat_id)
 
 
 # ==============================================================================
@@ -345,33 +342,31 @@ async def get_votes_by_chat_id(chat_id: UUID):
 
 
 @router.post("/documents", response_model=list[DocumentResponse])
-async def save_document(doc: DocumentCreate):
+async def save_document(doc: DocumentCreate, session: AsyncSession = Depends(get_db)):
     """Create a new document."""
-    async with get_session() as session:
-        return await queries.save_document(
-            session, doc.id, doc.title, doc.kind, doc.content, doc.userId
-        )
+    return await queries.save_document(
+        session, doc.id, doc.title, doc.kind, doc.content, doc.userId
+    )
 
 
 @router.get("/documents/{doc_id}", response_model=list[DocumentResponse])
-async def get_documents_by_id(doc_id: UUID):
+async def get_documents_by_id(doc_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get all versions of a document."""
-    async with get_session() as session:
-        return await queries.get_documents_by_id(session, doc_id)
+    return await queries.get_documents_by_id(session, doc_id)
 
 
 @router.get("/documents/{doc_id}/latest", response_model=DocumentResponse | None)
-async def get_document_by_id(doc_id: UUID):
+async def get_document_by_id(doc_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get the latest version of a document."""
-    async with get_session() as session:
-        return await queries.get_document_by_id(session, doc_id)
+    return await queries.get_document_by_id(session, doc_id)
 
 
 @router.delete("/documents/{doc_id}", response_model=list[DocumentResponse])
-async def delete_documents_after_timestamp(doc_id: UUID, timestamp: datetime = Query(...)):
+async def delete_documents_after_timestamp(
+    doc_id: UUID, timestamp: datetime = Query(...), session: AsyncSession = Depends(get_db)
+):
     """Delete document versions after a timestamp."""
-    async with get_session() as session:
-        return await queries.delete_documents_by_id_after_timestamp(session, doc_id, timestamp)
+    return await queries.delete_documents_by_id_after_timestamp(session, doc_id, timestamp)
 
 
 # ==============================================================================
@@ -380,17 +375,19 @@ async def delete_documents_after_timestamp(doc_id: UUID, timestamp: datetime = Q
 
 
 @router.post("/suggestions", response_model=list[SuggestionResponse])
-async def save_suggestions(suggestions: list[SuggestionCreate]):
+async def save_suggestions(
+    suggestions: list[SuggestionCreate], session: AsyncSession = Depends(get_db)
+):
     """Save multiple suggestions."""
-    async with get_session() as session:
-        return await queries.save_suggestions(session, [s.model_dump() for s in suggestions])
+    return await queries.save_suggestions(session, [s.model_dump() for s in suggestions])
 
 
 @router.get("/suggestions/{document_id}", response_model=list[SuggestionResponse])
-async def get_suggestions_by_document_id(document_id: UUID):
+async def get_suggestions_by_document_id(
+    document_id: UUID, session: AsyncSession = Depends(get_db)
+):
     """Get all suggestions for a document."""
-    async with get_session() as session:
-        return await queries.get_suggestions_by_document_id(session, document_id)
+    return await queries.get_suggestions_by_document_id(session, document_id)
 
 
 # ==============================================================================
@@ -399,15 +396,13 @@ async def get_suggestions_by_document_id(document_id: UUID):
 
 
 @router.post("/streams", response_model=SuccessResponse)
-async def create_stream_id(stream: StreamCreate):
+async def create_stream_id(stream: StreamCreate, session: AsyncSession = Depends(get_db)):
     """Create a stream record."""
-    async with get_session() as session:
-        await queries.create_stream_id(session, stream.streamId, stream.chatId)
-        return {"success": True}
+    await queries.create_stream_id(session, stream.streamId, stream.chatId)
+    return {"success": True}
 
 
 @router.get("/streams/{chat_id}", response_model=list[UUID])
-async def get_stream_ids_by_chat_id(chat_id: UUID):
+async def get_stream_ids_by_chat_id(chat_id: UUID, session: AsyncSession = Depends(get_db)):
     """Get all stream IDs for a chat."""
-    async with get_session() as session:
-        return await queries.get_stream_ids_by_chat_id(session, chat_id)
+    return await queries.get_stream_ids_by_chat_id(session, chat_id)
